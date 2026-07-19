@@ -7,6 +7,7 @@ from textual.screen import ModalScreen
 from git import GitCommandError
 
 from git_criollo.git_service import GitService
+from git_criollo.ayuda import VentanaAyuda
 
 
 # --- MODAL: CREAR NUEVA RAMA ---
@@ -128,6 +129,144 @@ class VentanaDiff(ModalScreen):
     def action_quit(self) -> None: self.dismiss()
 
 
+# --- MODAL: AMEND COMMIT ---
+class VentanaAmend(ModalScreen[str]):
+    BINDINGS = [("escape", "quit", "Cancelar")]
+    CSS = """
+    VentanaAmend { align: center middle; background: rgba(0, 0, 0, 0.6); }
+    #dialog_amend { padding: 1 2; background: #262626; border: heavy #ffaf00; width: 60; height: 11; }
+    Input { margin-top: 1; }
+    """
+    def compose(self) -> ComposeResult:
+        yield Vertical(
+            Label("[bold #ffaf00]Amend Commit[/]\nNuevo mensaje del commit:"),
+            Input(placeholder="ej. fix: corrige error en ventana modal"),
+            Label("\n[Presiona ESC para cancelar]"),
+            id="dialog_amend"
+        )
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        if event.value.strip(): self.dismiss(event.value.strip())
+    def action_quit(self) -> None: self.dismiss("")
+
+
+# --- MODAL: DETALLE DE COMMIT ---
+class VentanaDetalleCommit(ModalScreen):
+    BINDINGS = [("escape", "quit", "Cerrar"), ("q", "quit", "Cerrar")]
+    CSS = """
+    VentanaDetalleCommit { align: center middle; background: rgba(0,0,0,0.6); }
+    #dialog_detail { padding: 1 2; background: #121212; border: heavy #00afff; width: 80%; height: 80%; }
+    TextArea { background: #1a1a1a; border: tall #333; }
+    """
+    def __init__(self, sha: str, detail: str): super().__init__(); self.sha = sha; self.detail = detail
+    def compose(self) -> ComposeResult:
+        yield Vertical(
+            Label(f"[bold #00afff]Commit: {self.sha}[/]"),
+            TextArea(self.detail, read_only=True, show_line_numbers=True),
+            Label("[dim][Q / ESC] Cerrar[/dim]"),
+            id="dialog_detail"
+        )
+    def action_quit(self) -> None: self.dismiss()
+
+
+# --- MODAL: CREAR TAG ---
+class VentanaTag(ModalScreen[str]):
+    BINDINGS = [("escape", "quit", "Cancelar")]
+    CSS = """
+    VentanaTag { align: center middle; background: rgba(0,0,0,0.6); }
+    #dialog_tag { padding: 1 2; background: #262626; border: heavy #00afd7; width: 50; height: 11; }
+    Input { margin-top: 1; }
+    """
+    def compose(self) -> ComposeResult:
+        yield Vertical(
+            Label("[bold #00afd7]Crear Tag[/]\nNombre del tag:"),
+            Input(placeholder="ej. v1.0.0"),
+            Label("\n[ESC para cancelar]"),
+            id="dialog_tag"
+        )
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        if event.value.strip(): self.dismiss(event.value.strip())
+    def action_quit(self) -> None: self.dismiss("")
+
+
+# --- MODAL: CONFIRMAR BORRADO TAG ---
+class VentanaConfirmarBorradoTag(ModalScreen[bool]):
+    BINDINGS = [("escape", "cancel", "Cancelar")]
+    CSS = """
+    VentanaConfirmarBorradoTag { align: center middle; background: rgba(0,0,0,0.6); }
+    #dialog_tag_del { padding: 1 2; background: #262626; border: heavy #ff5f5f; width: 50; height: 10; }
+    #buttons { margin-top: 1; height: 3; align: center middle; }
+    Button { margin: 0 1; }
+    """
+    def __init__(self, nombre_tag: str): super().__init__(); self.nombre_tag = nombre_tag
+    def compose(self) -> ComposeResult:
+        yield Vertical(
+            Label(f"[bold #ff5f5f]¿Borrar Tag?[/]\n¿Seguro que querés eliminar el tag [bold]{self.nombre_tag}[/]?"),
+            Horizontal(Button("Sí", variant="error", id="s"), Button("No", variant="primary", id="n"), id="buttons"),
+            id="dialog_tag_del"
+        )
+    def on_button_pressed(self, event: Button.Pressed) -> None: self.dismiss(True if event.button.id == "s" else False)
+    def action_cancel(self) -> None: self.dismiss(False)
+
+
+# --- MODAL: CHERRY-PICK ---
+class VentanaCherryPick(ModalScreen[str]):
+    BINDINGS = [("escape", "quit", "Cancelar")]
+    CSS = """
+    VentanaCherryPick { align: center middle; background: rgba(0,0,0,0.6); }
+    #dialog_cherry { padding: 1 2; background: #262626; border: heavy #af5fff; width: 60; height: 11; }
+    Input { margin-top: 1; }
+    """
+    def compose(self) -> ComposeResult:
+        yield Vertical(
+            Label("[bold #af5fff]Cherry-Pick[/]\nSHA del commit a aplicar:"),
+            Input(placeholder="ej. a1b2c3d"),
+            Label("\n[ESC para cancelar]"),
+            id="dialog_cherry"
+        )
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        if event.value.strip(): self.dismiss(event.value.strip())
+    def action_quit(self) -> None: self.dismiss("")
+
+
+# --- MODAL: COMANDO PERSONALIZADO ---
+class VentanaComando(ModalScreen[str]):
+    BINDINGS = [("escape", "quit", "Cancelar")]
+    CSS = """
+    VentanaComando { align: center middle; background: rgba(0,0,0,0.6); }
+    #dialog_cmd { padding: 1 2; background: #262626; border: heavy #ffaf00; width: 60; height: 11; }
+    Input { margin-top: 1; }
+    """
+    def compose(self) -> ComposeResult:
+        yield Vertical(
+            Label("[bold #ffaf00]Comando Git[/]\nIngresá un comando (sin el prefijo 'git '):"),
+            Input(placeholder="ej. log --oneline -3"),
+            Label("\n[ESC para cancelar]"),
+            id="dialog_cmd"
+        )
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        if event.value.strip(): self.dismiss(event.value.strip())
+    def action_quit(self) -> None: self.dismiss("")
+
+
+# --- MODAL: RESULTADO DE COMANDO ---
+class VentanaResultado(ModalScreen):
+    BINDINGS = [("escape", "quit", "Cerrar"), ("q", "quit", "Cerrar")]
+    CSS = """
+    VentanaResultado { align: center middle; background: rgba(0,0,0,0.6); }
+    #dialog_result { padding: 1 2; background: #121212; border: heavy #ffaf00; width: 80%; height: 80%; }
+    TextArea { background: #1a1a1a; border: tall #333; }
+    """
+    def __init__(self, titulo: str, texto: str): super().__init__(); self.titulo = titulo; self.texto = texto
+    def compose(self) -> ComposeResult:
+        yield Vertical(
+            Label(f"[bold #ffaf00]{self.titulo}[/]"),
+            TextArea(self.texto, read_only=True, show_line_numbers=True),
+            Label("[dim][Q / ESC] Cerrar[/dim]"),
+            id="dialog_result"
+        )
+    def action_quit(self) -> None: self.dismiss()
+
+
 # --- APLICACIÓN PRINCIPAL ---
 class GitCriolloApp(App):
     BINDINGS = [
@@ -146,6 +285,12 @@ class GitCriolloApp(App):
         ("v", "ver_diff", "Ver Diff"),
         ("l", "mas_commits", "+Commits"),
         ("g", "toggle_grafico", "Log Graph"),
+        ("e", "amend_commit", "Amend"),
+        ("t", "crear_tag", "Tag+"),
+        ("T", "eliminar_tag", "Tag-"),
+        ("y", "cherry_pick", "Cherry"),
+        ("r", "comando_personalizado", "Cmd"),
+        ("?", "ayuda", "Ayuda"),
     ]
 
     CSS = """
@@ -186,15 +331,7 @@ class GitCriolloApp(App):
                 ListView(id="lista_ramas"),
                 Label("", id="info_rama"),
                 Label(
-                    "[bold #00afd7][N][/] Nueva  [bold #00ff00][C][/] Checkout  "
-                    "[bold #ff5f5f][D][/] Borrar  [bold #00afd7][M][/] Merge\n"
-                    "[bold #ffaf00][P][/] Pull   [bold #ffaf00][U][/] Push      "
-                    "[bold #00afff][F][/] Fetch  [bold #888888][Q][/] Salir\n"
-                    "[bold #00ff00][A][/] Stage Todo              "
-                    "[bold #ffaf00][W][/] Commit\n"
-                    "[bold #af5fff][z][/] Push  [bold #af5fff][Z][/] Pop Stash  "
-                    "[bold #00afff][V][/] Diff  [bold #ffaf00][G][/] Graph  "
-                    "[bold #888888][L][/] +Cmts",
+                    "[dim]Presioná [bold]?[/bold] para ayuda completa[/dim]",
                     id="atajos_help"
                 ),
                 classes="columna"
@@ -267,6 +404,16 @@ class GitCriolloApp(App):
                 item = ListItem(Label(f"  [dim]{rm}[/dim]"))
                 item.rama_objeto = rm
                 item.es_remota = True
+                lista.append(item)
+
+        if info.tags:
+            sep = ListItem(Label("[dim]── Tags ──[/dim]"))
+            sep.disabled = True
+            lista.append(sep)
+            for tg in info.tags:
+                item = ListItem(Label(f"  [#ffaf00]●[/#ffaf00] {tg}"))
+                item.rama_objeto = f"tag:{tg}"
+                item.es_remota = False
                 lista.append(item)
 
         if info.branches:
@@ -371,7 +518,22 @@ class GitCriolloApp(App):
             except Exception as e:
                 self._notify_error(e)
 
+        elif lista_id == "lista_commits":
+            sha = getattr(item, "commit_hash", None)
+            if sha:
+                self._mostrar_detalle_commit(sha)
+
+        elif lista_id == "lista_ramas":
+            r = getattr(item, "rama_objeto", None)
+            if r and r.startswith("tag:"):
+                tag_name = r[4:]
+                self.push_screen(VentanaConfirmarBorradoTag(tag_name),
+                                 lambda b, n=tag_name: self._borrar_tag_si_confirmado(b, n))
+
     # --- ACCIONES ---
+
+    def action_ayuda(self) -> None:
+        self.push_screen(VentanaAyuda())
 
     def action_nueva_rama(self) -> None:
         def p(n: str | None):
@@ -416,6 +578,11 @@ class GitCriolloApp(App):
             self.notify("No podés borrar una rama remota.", severity="error")
             return
         info = self.git.get_branches()
+        if r.startswith("tag:"):
+            tag_name = r[4:]
+            self.push_screen(VentanaConfirmarBorradoTag(tag_name),
+                             lambda b, n=tag_name: self._borrar_tag_si_confirmado(b, n))
+            return
         if r == info.active:
             self.notify("No podés borrar la rama activa.", severity="error")
             return
@@ -425,7 +592,6 @@ class GitCriolloApp(App):
                 try:
                     self.git.delete_branch(r)
                     self.notify(f"Borrada: {r}")
-                    #self.actualizar_ramas()
                     self.actualizar_pantalla_completa()
                 except Exception as e:
                     self._notify_error(e)
@@ -590,3 +756,80 @@ class GitCriolloApp(App):
                 self._commit_offset += len(commits)
             else:
                 self.notify("No hay más commits.")
+
+    def _mostrar_detalle_commit(self, sha: str) -> None:
+        try:
+            detail = self.git.get_commit_detail(sha)
+            texto = f"Commit: {detail.hash}\nAutor: {detail.author}\nFecha: {detail.date}\n\n{detail.message}\n\n---\n{detail.diff}"
+            self.push_screen(VentanaDetalleCommit(sha, texto))
+        except Exception as e:
+            self._notify_error(e)
+
+    def _borrar_tag_si_confirmado(self, b: bool | None, tag_name: str) -> None:
+        if b:
+            try:
+                self.git.delete_tag(tag_name)
+                self.notify(f"Tag '{tag_name}' borrado.")
+                self.actualizar_ramas()
+            except Exception as e:
+                self._notify_error(e)
+
+    def action_amend_commit(self) -> None:
+        history = self.query_one("#lista_commits", ListView)
+        if not history.children:
+            self.notify("No hay commits para modificar.", severity="warning")
+            return
+
+        def p(mensaje: str | None):
+            if mensaje:
+                try:
+                    self.git.amend_commit(mensaje)
+                    self.notify("Commit modificado (amend).")
+                    self.actualizar_pantalla_completa()
+                except Exception as e:
+                    self._notify_error(e)
+
+        self.push_screen(VentanaAmend(), p)
+
+    def action_crear_tag(self) -> None:
+        def p(nombre: str | None):
+            if nombre:
+                try:
+                    self.git.create_tag(nombre)
+                    self.notify(f"Tag '{nombre}' creado.")
+                    self.actualizar_ramas()
+                except Exception as e:
+                    self._notify_error(e)
+
+        self.push_screen(VentanaTag(), p)
+
+    def action_eliminar_tag(self) -> None:
+        info = self.git.get_branches()
+        if not info.tags:
+            self.notify("No hay tags para borrar.", severity="warning")
+            return
+        tags = ", ".join(info.tags)
+        self.notify(f"Seleccioná un tag en la lista de ramas y presioná [bold]D[/bold] para borrarlo: {tags}")
+
+    def action_cherry_pick(self) -> None:
+        def p(sha: str | None):
+            if sha:
+                try:
+                    self.git.cherry_pick(sha)
+                    self.notify(f"Cherry-pick de {sha} aplicado.")
+                    self.actualizar_pantalla_completa()
+                except Exception as e:
+                    self._notify_error(e)
+
+        self.push_screen(VentanaCherryPick(), p)
+
+    def action_comando_personalizado(self) -> None:
+        def p(cmd: str | None):
+            if cmd:
+                try:
+                    resultado = self.git.run_command(cmd)
+                    self.push_screen(VentanaResultado(f"Resultado: git {cmd}", resultado))
+                except Exception as e:
+                    self._notify_error(e)
+
+        self.push_screen(VentanaComando(), p)
