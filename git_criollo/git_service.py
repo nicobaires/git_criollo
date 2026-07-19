@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from git import Repo
+from git import Repo, GitCommandError
 
 
 @dataclass

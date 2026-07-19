@@ -170,7 +170,7 @@ class GitCriolloApp(App):
         try:
             self.git = GitService(os.getcwd())
             self._commit_offset = 0
-            self.actualizar_pantalla()
+            self.actualizar_pantalla_completa()
         except Exception:
             self.exit(message="Error: No estás dentro de un repositorio de Git.")
 
@@ -213,11 +213,15 @@ class GitCriolloApp(App):
         )
         yield Footer()
 
-    def actualizar_pantalla(self) -> None:
-        self.actualizar_ramas()
-        self.actualizar_historial()
-        self.actualizar_status()
-        self.actualizar_header()
+    def actualizar_pantalla_completa(self) -> None:
+        """Método centralizado para refrescar toda la UI"""
+        try:
+            self.actualizar_ramas()
+            self.actualizar_historial()
+            self.actualizar_status()
+            self.actualizar_header()
+        except Exception as e:
+            self.notify(f"Error al actualizar pantalla: {e}", severity="error")
 
     def actualizar_header(self) -> None:
         try:
@@ -368,8 +372,9 @@ class GitCriolloApp(App):
             else:
                 self.git.checkout(r)
                 self.notify(f"Checkout: {r}")
-            self.actualizar_ramas()
-            self.actualizar_status()
+            # self.actualizar_ramas()
+            # self.actualizar_status()
+            self.actualizar_pantalla_completa()
         except Exception as e:
             self.notify(f"Error: {e}", severity="error")
 
@@ -392,7 +397,8 @@ class GitCriolloApp(App):
                 try:
                     self.git.delete_branch(r)
                     self.notify(f"Borrada: {r}")
-                    self.actualizar_ramas()
+                    #self.actualizar_ramas()
+                    self.actualizar_pantalla_completa()
                 except Exception as e:
                     self.notify(f"Error: {e}", severity="error")
         if r:
@@ -417,8 +423,9 @@ class GitCriolloApp(App):
                 try:
                     self.git.merge(r)
                     self.notify(f"Merged {r} en {info.active}")
-                    self.actualizar_historial()
-                    self.actualizar_status()
+                    # self.actualizar_historial()
+                    # self.actualizar_status()
+                    self.actualizar_pantalla_completa()
                 except Exception as e:
                     self.notify(f"Error en merge: {e}", severity="error")
         self.push_screen(VentanaConfirmarMerge(r), p)
@@ -428,16 +435,27 @@ class GitCriolloApp(App):
         try:
             self.git.pull()
             self.notify("¡Pull OK!")
-            self.actualizar_historial()
-            self.actualizar_status()
+            # self.actualizar_historial()
+            # self.actualizar_status()
+            self.actualizar_pantalla_completa()
         except Exception as e:
             self.notify(f"Falló: {e}", severity="error")
+
+    # def action_push_rama(self) -> None:
+    #     self.notify("Git push...")
+    #     try:
+    #         self.git.push(self.git.get_branches().active)
+    #         self.notify("¡Push OK!")
+    #     except Exception as e:
+    #         self.notify(f"Falló: {e}", severity="error")
 
     def action_push_rama(self) -> None:
         self.notify("Git push...")
         try:
-            self.git.push(self.git.get_branches().active)
+            active_branch = self.git.get_branches().active
+            self.git.push(active_branch)
             self.notify("¡Push OK!")
+            self.actualizar_pantalla_completa()   # ← Esto es lo importante
         except Exception as e:
             self.notify(f"Falló: {e}", severity="error")
 
@@ -446,8 +464,9 @@ class GitCriolloApp(App):
         try:
             self.git.fetch()
             self.notify("¡Fetch OK!")
-            self.actualizar_historial()
-            self.actualizar_ramas()
+            # self.actualizar_historial()
+            # self.actualizar_ramas()
+            self.actualizar_pantalla_completa()
         except Exception as e:
             self.notify(f"Falló: {e}", severity="error")
 
@@ -470,8 +489,9 @@ class GitCriolloApp(App):
                 try:
                     self.git.commit(mensaje)
                     self.notify("¡Commit creado con éxito!")
-                    self.actualizar_historial()
-                    self.actualizar_status()
+                    # self.actualizar_historial()
+                    # self.actualizar_status()
+                    self.actualizar_pantalla_completa()
                 except Exception as e:
                     self.notify(f"Error en commit: {e}", severity="error")
 
