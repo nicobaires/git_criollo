@@ -1,4 +1,4 @@
-# lazy-git
+# GitCriollo
 
 TUI (Terminal User Interface) para Git construida con [Textual](https://textual.textualize.io/) y [GitPython](https://gitpython.readthedocs.io/).
 
@@ -11,7 +11,7 @@ uv add gitpython textual
 ## Uso
 
 ```bash
-uv run python -m mates_git
+uv run python -m git_criollo
 ```
 
 ## Atajos
@@ -37,9 +37,9 @@ uv run python -m mates_git
 ## Estructura del proyecto
 
 ```
-mates_git/
+git_criollo/
 ├── __init__.py          # package marker
-├── __main__.py          # entry point (python -m mates_git)
+├── __main__.py          # entry point (python -m git_criollo)
 ├── git_service.py       # lógica Git (dataclasses + GitService)
 └── ui.py                # widgets Textual (modales + App)
 ```

@@ -5,7 +5,7 @@ from textual.widgets import Header, Footer, ListView, ListItem, Label, Input, Bu
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
 
-from mates_git.git_service import GitService
+from git_criollo.git_service import GitService
 
 
 # --- MODAL: CREAR NUEVA RAMA ---
@@ -128,7 +128,7 @@ class VentanaDiff(ModalScreen):
 
 
 # --- APLICACIÓN PRINCIPAL ---
-class MiLazyGitRamas(App):
+class GitCriolloApp(App):
     BINDINGS = [
         ("q", "quit", "Salir"),
         ("n", "nueva_rama", "Nueva"),

@@ -1,5 +1,5 @@
 def main():
-    print("Hello from lazy-git!")
+    print("Hello from GitCriollo!")
 
 
 if __name__ == "__main__":

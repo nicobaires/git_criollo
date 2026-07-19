@@ -1,7 +1,7 @@
 [project]
-name = "lazy-git"
+name = "git-criollo"
 version = "0.1.0"
-description = "Add your description here"
+description = "TUI para Git con interfaz limpieza"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
