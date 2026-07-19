@@ -148,19 +148,22 @@ class MiLazyGitRamas(App):
 
     CSS = """
     Horizontal { width: 100%; height: 100%; }
-    .columna { width: 40%; height: 100%; border-right: solid #333; }
-    .columna-derecha { width: 60%; height: 100%; }
-    .panel { height: 50%; padding: 1 1 1 1; background: #121212; border-bottom: solid #222; }
+    .columna { width: 25%; height: 100%; border-right: solid #333; }
+    .columna-derecha { width: 75%; height: 100%; }
+    .panel { padding: 1; background: #121212; border-bottom: solid #222; }
+    .panel-status { height: auto; }
+    .panel-history { height: 1fr; }
     ListView { background: #1a1a1a; margin: 1; border: tall #444; }
     #lista_ramas { height: 1fr; }
-    #lista_staged { height: 1fr; margin: 0 0 0 1; border: solid #333; }
-    #lista_unstaged { height: 1fr; margin: 0 0 0 1; border: solid #333; }
+    #lista_staged { height: auto; max-height: 8; margin: 0 0 0 1; border: solid #333; }
+    #lista_unstaged { height: auto; max-height: 8; margin: 0 0 0 1; border: solid #333; }
     #lista_commits { height: 1fr; margin: 1; border: solid #333; }
     ListItem { padding: 0 1; }
     ListItem.--highlight { background: #005f87; }
     Label { margin: 1 0 0 2; }
     .label-subtitle { margin: 0 0 0 2; text-style: bold; }
     #atajos_help { margin: 1 0 1 2; color: #888; height: auto; }
+    #info_rama { margin: 0 0 0 2; color: #aaa; height: auto; }
     """
 
     def on_mount(self) -> None:
@@ -177,6 +180,7 @@ class MiLazyGitRamas(App):
             Vertical(
                 Label("[bold]MIS RAMAS[/]"),
                 ListView(id="lista_ramas"),
+                Label("", id="info_rama"),
                 Label(
                     "[bold #00afd7][N][/] Nueva  [bold #00ff00][C][/] Checkout  "
                     "[bold #ff5f5f][D][/] Borrar  [bold #00afd7][M][/] Merge\n"
@@ -197,12 +201,12 @@ class MiLazyGitRamas(App):
                     ListView(id="lista_staged"),
                     Label("[bold #ff5f5f]Modificados / No trackeados:[/]"),
                     ListView(id="lista_unstaged"),
-                    classes="panel"
+                    classes="panel panel-status"
                 ),
                 Vertical(
                     Label("[bold #ffaf00]HISTORIAL DE COMMITS[/]", classes="label-subtitle"),
                     ListView(id="lista_commits"),
-                    classes="panel"
+                    classes="panel panel-history"
                 ),
                 classes="columna-derecha"
             )
@@ -258,6 +262,18 @@ class MiLazyGitRamas(App):
 
         if info.branches:
             lista.index = indice_activa
+
+        info_label = self.query_one("#info_rama", Label)
+        status = self.git.get_status()
+        a = info.ahead.get(info.active, 0)
+        b = info.behind.get(info.active, 0)
+        partes = [f"[bold]{info.active}[/]"]
+        if a or b:
+            partes.append(f"[dim][+{a} -{b}][/dim]")
+        dirty = bool(status.unstaged or status.untracked)
+        icono = "[#ff5f5f]● sucio[/]" if dirty else "[#00ff00]● limpio[/]"
+        partes.append(icono)
+        info_label.update("  ".join(partes))
 
     def actualizar_historial(self) -> None:
         self._commit_offset = 0
