@@ -4,6 +4,7 @@ from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, ListView, ListItem, Label, Input, Button, TextArea
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
+from git import GitCommandError
 
 from git_criollo.git_service import GitService
 
@@ -171,6 +172,7 @@ class GitCriolloApp(App):
             self.git = GitService(os.getcwd())
             self._commit_offset = 0
             self.actualizar_pantalla_completa()
+            self.set_interval(5, self.actualizar_status)
         except Exception:
             self.exit(message="Error: No estás dentro de un repositorio de Git.")
 
@@ -318,6 +320,22 @@ class GitCriolloApp(App):
 
     # --- EVENTOS ---
 
+    def key_tab(self) -> None:
+        order = ["lista_ramas", "lista_staged", "lista_unstaged", "lista_commits"]
+        focused = self.focused
+        if focused and focused.id in order:
+            idx = (order.index(focused.id) + 1) % len(order)
+        else:
+            idx = 0
+        self.query_one(f"#{order[idx]}", ListView).focus()
+
+    def _notify_error(self, e: Exception) -> None:
+        if isinstance(e, GitCommandError):
+            msg = e.stderr.strip() if e.stderr else str(e)
+        else:
+            msg = str(e)
+        self.notify(f"Error: {msg}", severity="error")
+
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         lista_id = event.list_view.id
         item = event.item
@@ -333,7 +351,7 @@ class GitCriolloApp(App):
                 self.notify(f"Unstage: {ruta}")
                 self.actualizar_status()
             except Exception as e:
-                self.notify(f"Error: {e}", severity="error")
+                self._notify_error(e)
 
         elif lista_id == "lista_unstaged":
             try:
@@ -341,7 +359,7 @@ class GitCriolloApp(App):
                 self.notify(f"Stage: {ruta}")
                 self.actualizar_status()
             except Exception as e:
-                self.notify(f"Error: {e}", severity="error")
+                self._notify_error(e)
 
     # --- ACCIONES ---
 
@@ -353,7 +371,7 @@ class GitCriolloApp(App):
                     self.notify(f"Rama '{n}' creada.")
                     self.actualizar_ramas()
                 except Exception as e:
-                    self.notify(f"Error: {e}", severity="error")
+                    self._notify_error(e)
         self.push_screen(VentanaNuevaRama(), p)
 
     def action_cambiar_rama(self) -> None:
@@ -376,7 +394,7 @@ class GitCriolloApp(App):
             # self.actualizar_status()
             self.actualizar_pantalla_completa()
         except Exception as e:
-            self.notify(f"Error: {e}", severity="error")
+            self._notify_error(e)
 
     def action_eliminar_rama(self) -> None:
         lista = self.query_one("#lista_ramas", ListView)
@@ -400,7 +418,7 @@ class GitCriolloApp(App):
                     #self.actualizar_ramas()
                     self.actualizar_pantalla_completa()
                 except Exception as e:
-                    self.notify(f"Error: {e}", severity="error")
+                    self._notify_error(e)
         if r:
             self.push_screen(VentanaConfirmarBorrado(r), p)
 
@@ -427,7 +445,7 @@ class GitCriolloApp(App):
                     # self.actualizar_status()
                     self.actualizar_pantalla_completa()
                 except Exception as e:
-                    self.notify(f"Error en merge: {e}", severity="error")
+                    self._notify_error(e)
         self.push_screen(VentanaConfirmarMerge(r), p)
 
     def action_pull_rama(self) -> None:
@@ -439,7 +457,7 @@ class GitCriolloApp(App):
             # self.actualizar_status()
             self.actualizar_pantalla_completa()
         except Exception as e:
-            self.notify(f"Falló: {e}", severity="error")
+            self._notify_error(e)
 
     # def action_push_rama(self) -> None:
     #     self.notify("Git push...")
@@ -457,7 +475,7 @@ class GitCriolloApp(App):
             self.notify("¡Push OK!")
             self.actualizar_pantalla_completa()   # ← Esto es lo importante
         except Exception as e:
-            self.notify(f"Falló: {e}", severity="error")
+            self._notify_error(e)
 
     def action_fetch_rama(self) -> None:
         self.notify("Git fetch...")
@@ -468,7 +486,7 @@ class GitCriolloApp(App):
             # self.actualizar_ramas()
             self.actualizar_pantalla_completa()
         except Exception as e:
-            self.notify(f"Falló: {e}", severity="error")
+            self._notify_error(e)
 
     def action_stage_all(self) -> None:
         try:
@@ -476,7 +494,7 @@ class GitCriolloApp(App):
             self.notify("Todos los cambios agregados al Stage.")
             self.actualizar_status()
         except Exception as e:
-            self.notify(f"Error al agregar: {e}", severity="error")
+            self._notify_error(e)
 
     def action_commit_cambios(self) -> None:
         info = self.git.get_status()
@@ -493,7 +511,7 @@ class GitCriolloApp(App):
                     # self.actualizar_status()
                     self.actualizar_pantalla_completa()
                 except Exception as e:
-                    self.notify(f"Error en commit: {e}", severity="error")
+                    self._notify_error(e)
 
         self.push_screen(VentanaCommit(), guardar_commit)
 
@@ -506,7 +524,7 @@ class GitCriolloApp(App):
                 self.notify("Stash guardado.")
                 self.actualizar_status()
             except Exception as e:
-                self.notify(f"Error: {e}", severity="error")
+                self._notify_error(e)
         self.push_screen(VentanaStashPush(), p)
 
     def action_stash_pop(self) -> None:
@@ -515,7 +533,7 @@ class GitCriolloApp(App):
             self.notify("Stash recuperado.")
             self.actualizar_status()
         except Exception as e:
-            self.notify(f"Error: {e}", severity="error")
+            self._notify_error(e)
 
     def action_ver_diff(self) -> None:
         focused = self.focused
