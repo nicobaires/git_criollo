@@ -145,6 +145,7 @@ class GitCriolloApp(App):
         ("Z", "stash_pop", "Stash Pop"),
         ("v", "ver_diff", "Ver Diff"),
         ("l", "mas_commits", "+Commits"),
+        ("g", "toggle_grafico", "Log Graph"),
     ]
 
     CSS = """
@@ -171,6 +172,7 @@ class GitCriolloApp(App):
         try:
             self.git = GitService(os.getcwd())
             self._commit_offset = 0
+            self._modo_grafico = False
             self.actualizar_pantalla_completa()
             self.set_interval(5, self.actualizar_status)
         except Exception:
@@ -191,7 +193,8 @@ class GitCriolloApp(App):
                     "[bold #00ff00][A][/] Stage Todo              "
                     "[bold #ffaf00][W][/] Commit\n"
                     "[bold #af5fff][z][/] Push  [bold #af5fff][Z][/] Pop Stash  "
-                    "[bold #00afff][V][/] Diff  [bold #888888][L][/] +Cmts",
+                    "[bold #00afff][V][/] Diff  [bold #ffaf00][G][/] Graph  "
+                    "[bold #888888][L][/] +Cmts",
                     id="atajos_help"
                 ),
                 classes="columna"
@@ -285,14 +288,21 @@ class GitCriolloApp(App):
         self._commit_offset = 0
         lista = self.query_one("#lista_commits", ListView)
         lista.clear()
-        commits = self.git.get_commits(skip=0, n=20)
-        for c in commits:
-            item = ListItem(Label(
-                f"[#ffaf00]{c.hash}[/#ffaf00] - {c.message} [dim]({c.author})[/dim]"
-            ))
-            item.commit_hash = c.hash
-            lista.append(item)
-        self._commit_offset = len(commits)
+        if self._modo_grafico:
+            lineas = self.git.get_graph_log(skip=0, n=20)
+            for linea in lineas:
+                item = ListItem(Label(f"[dim]{linea}[/dim]"))
+                lista.append(item)
+            self._commit_offset = len(lineas)
+        else:
+            commits = self.git.get_commits(skip=0, n=20)
+            for c in commits:
+                item = ListItem(Label(
+                    f"[#ffaf00]{c.hash}[/#ffaf00] - {c.message} [dim]({c.author})[/dim]"
+                ))
+                item.commit_hash = c.hash
+                lista.append(item)
+            self._commit_offset = len(commits)
 
     def actualizar_status(self) -> None:
         info = self.git.get_status()
@@ -550,16 +560,33 @@ class GitCriolloApp(App):
         diff = self.git.get_diff(ruta, staged=staged)
         self.push_screen(VentanaDiff(ruta, diff))
 
+    def action_toggle_grafico(self) -> None:
+        self._modo_grafico = not self._modo_grafico
+        self.actualizar_historial()
+        modo = "gráfico" if self._modo_grafico else "detalle"
+        self.notify(f"Modo historial: {modo}")
+
     def action_mas_commits(self) -> None:
         lista = self.query_one("#lista_commits", ListView)
-        commits = self.git.get_commits(skip=self._commit_offset, n=20)
-        for c in commits:
-            item = ListItem(Label(
-                f"[#ffaf00]{c.hash}[/#ffaf00] - {c.message} [dim]({c.author})[/dim]"
-            ))
-            item.commit_hash = c.hash
-            lista.append(item)
-        if commits:
-            self._commit_offset += len(commits)
+        n = 20
+        if self._modo_grafico:
+            lineas = self.git.get_graph_log(skip=self._commit_offset, n=n)
+            for linea in lineas:
+                item = ListItem(Label(f"[dim]{linea}[/dim]"))
+                lista.append(item)
+            if lineas:
+                self._commit_offset += len(lineas)
+            else:
+                self.notify("No hay más commits.")
         else:
-            self.notify("No hay más commits.")
+            commits = self.git.get_commits(skip=self._commit_offset, n=n)
+            for c in commits:
+                item = ListItem(Label(
+                    f"[#ffaf00]{c.hash}[/#ffaf00] - {c.message} [dim]({c.author})[/dim]"
+                ))
+                item.commit_hash = c.hash
+                lista.append(item)
+            if commits:
+                self._commit_offset += len(commits)
+            else:
+                self.notify("No hay más commits.")

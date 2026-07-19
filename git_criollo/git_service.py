@@ -67,6 +67,14 @@ class GitService:
             behind=behind,
         )
 
+    def get_graph_log(self, skip: int = 0, n: int = 20) -> list[str]:
+        try:
+            result = self.repo.git.log("--graph", "--oneline", "--all",
+                                       "--skip", str(skip), "-n", str(n))
+            return [line.rstrip() for line in result.split("\n") if line.strip()]
+        except Exception:
+            return []
+
     def get_commits(self, skip: int = 0, n: int = 20) -> list[CommitInfo]:
         try:
             return [
