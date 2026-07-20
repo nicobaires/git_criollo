@@ -55,13 +55,14 @@ Presioná `?` dentro de la aplicación para ver la ayuda completa.
 ## Características
 
 - **Ramas**: crear, checkout, borrar (con confirmación), merge, ver ramas locales y remotas con ahead/behind
-- **Cambios**: stage/unstage por archivo o global, diff coloreado (verde para +, rojo para -, azul para @@), commit, amend, stash push/pop
+- **Cambios**: stage/unstage por archivo o global, diff coloreado con word-diff (verde/rojo para líneas + fondos para palabras +/-, azul para @@), commit, amend, stash push/pop. Pantalla completa con `C`: lista de archivos con contador, diff navegable por flechas, stage/unstage con Enter.
 - **Historial**: lista paginada de commits, log gráfico (`git log --graph --oneline --all`), detalle completo con diff coloreado al presionar Enter
 - **Tags**: crear y borrar tags desde la interfaz
 - **Cherry-pick**: aplicar commits de otras ramas por SHA
 - **Comandos personalizados**: ejecutar cualquier comando git y ver el resultado
 - **Auto-refresh**: el panel de estado se actualiza cada 5 segundos
-- **Navegación**: Tab para ciclar el foco entre paneles (el borde del panel activo cambia de color), ayuda completa con `?`, pantalla de cambios sin commit con `C`
+- **Navegación**: Tab para ciclar el foco entre paneles (el borde del panel activo cambia de color), mini-help visible siempre en la columna izquierda, ayuda completa con `?`, pantalla de cambios sin commit con `C`
+- **HEAD detached**: se muestra una advertencia visible en el header
 
 ## Estructura del proyecto
 
