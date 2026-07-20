@@ -50,6 +50,7 @@ class GitCriolloApp(App):
         ("t", "crear_tag", "Tag+"),
         ("T", "eliminar_tag", "Tag-"),
         ("y", "cherry_pick", "Cherry"),
+        ("f5", "refresh", "Refrescar"),
         ("r", "comando_personalizado", "Cmd"),
         ("p", "stage_hunk", "Stage Hunk"),
         ("R", "rebase", "Rebase"),
@@ -89,7 +90,6 @@ class GitCriolloApp(App):
             self._commit_offset = 0
             self._modo_grafico = False
             self.actualizar_pantalla_completa()
-            self.set_interval(5, self.actualizar_status)
         except Exception:
             self.exit(message="Error: No estás dentro de un repositorio de Git.")
 
@@ -676,3 +676,7 @@ class GitCriolloApp(App):
             self.notify("No hay archivos en conflicto.", severity="warning")
             return
         self.push_screen(VentanaConflictos(archivos), lambda _: self.actualizar_pantalla_completa())
+
+    def action_refresh(self) -> None:
+        self.actualizar_pantalla_completa()
+        self.notify("Pantalla actualizada.", severity="information", timeout=1)
