@@ -38,6 +38,8 @@ Presioná `?` dentro de la aplicación para ver la ayuda completa.
 | `v` | Ver Diff | Mostrar diff del archivo seleccionado |
 | `C` | Cambios sin commit | Pantalla completa con lista de archivos + diff coloreado |
 | `Tab` | Ciclo foco | Navegar entre paneles |
+| `i` | Ver .gitignore | Mostrar el contenido del .gitignore |
+| `I` | Ignorar archivo | Agregar el untracked seleccionado al .gitignore |
 | | **Stash** | |
 | `z` | Stash Push | Guardar cambios en el stash |
 | `Z` | Stash Pop | Recuperar el último stash |
@@ -55,7 +57,7 @@ Presioná `?` dentro de la aplicación para ver la ayuda completa.
 ## Características
 
 - **Ramas**: crear, checkout, borrar (con confirmación), merge, ver ramas locales y remotas con ahead/behind
-- **Cambios**: stage/unstage por archivo o global, diff coloreado con word-diff (verde/rojo para líneas + fondos para palabras +/-, azul para @@), commit, amend, stash push/pop. Pantalla completa con `C`: lista de archivos con contador, diff navegable por flechas, stage/unstage con Enter.
+- **Cambios**: stage/unstage por archivo o global, diff coloreado con word-diff (verde/rojo para líneas + fondos para palabras +/-, azul para @@), commit, amend, stash push/pop. Pantalla completa con `C`: lista de archivos con contador, diff navegable por flechas, stage/unstage con Enter. Gestión de `.gitignore`: ver (`i`) y agregar untracked (`I`).
 - **Historial**: lista paginada de commits, log gráfico (`git log --graph --oneline --all`), detalle completo con diff coloreado al presionar Enter
 - **Tags**: crear y borrar tags desde la interfaz
 - **Cherry-pick**: aplicar commits de otras ramas por SHA

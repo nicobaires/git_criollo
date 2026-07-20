@@ -279,6 +279,7 @@ class VentanaUncommitted(ModalScreen):
         ("v", "ver_diff", "Ver Diff"),
         ("a", "stage_all", "Stage All"),
         ("w", "commit_cambios", "Commit"),
+        ("i", "agregar_gitignore", "Ignore"),
     ]
     CSS = """
     VentanaUncommitted { align: center middle; background: rgba(0,0,0,0.85); }
@@ -301,7 +302,7 @@ class VentanaUncommitted(ModalScreen):
                 Vertical(
                     Label("[bold]Archivos[/] (Enter: stage/unstage)", id="uc_title"),
                     ListView(id="uc_file_list"),
-                    Label("[dim][[a]] Stage All  [[w]] Commit  [[v]] Ver Diff  [[q]] Cerrar[/dim]", id="uc_actions"),
+                    Label("[dim][[a]] Stage All  [[w]] Commit  [[v]] Ver Diff  [[i]] Ignore  [[q]] Cerrar[/dim]", id="uc_actions"),
                     id="uc_files",
                 ),
                 Vertical(
@@ -449,6 +450,25 @@ class VentanaUncommitted(ModalScreen):
         else:
             msg = str(e)
         self.notify(f"Error: {msg}", severity="error", timeout=10)
+
+    def action_agregar_gitignore(self) -> None:
+        lista = self.query_one("#uc_file_list", ListView)
+        item = lista.highlighted_child
+        if not item:
+            return
+        ruta = getattr(item, "archivo_ruta", None)
+        if not ruta:
+            return
+        info = self.git.get_status()
+        if ruta not in info.untracked:
+            self.notify("Solo se puede ignorar archivos no trackeados.", severity="warning")
+            return
+        try:
+            self.git.add_to_gitignore(ruta)
+            self.notify(f"Ignorado: {ruta}")
+            self._refrescar()
+        except Exception as e:
+            self._notify_error(e)
 
     def action_quit(self) -> None:
         self.dismiss()

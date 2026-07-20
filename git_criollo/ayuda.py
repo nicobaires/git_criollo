@@ -23,6 +23,8 @@ SECCIONES = [
         ("v", "Ver Diff:", "Mostrar el diff del archivo seleccionado en el panel de estado."),
         ("C", "Cambios sin commit:", "Abrir pantalla completa con lista de archivos y diff coloreado. Enter stage/unstage, flechas cambian el diff."),
         ("Tab", "Ciclo foco:", "Navegar entre Ramas → Staged → Unstaged → Historial."),
+        ("i", "Ver .gitignore:", "Abrir el archivo .gitignore en un modal de lectura."),
+        ("I", "Ignorar archivo:", "Agregar el archivo no trackeado seleccionado al .gitignore."),
     ]),
     ("STASH", [
         ("z", "Stash Push:", "Guardar cambios actuales en el stash (mensaje opcional)."),

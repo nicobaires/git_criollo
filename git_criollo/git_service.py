@@ -1,3 +1,4 @@
+import os
 from dataclasses import dataclass, field
 from git import Repo
 
@@ -230,3 +231,23 @@ class GitService:
             return self.repo.git.diff("--cached", "--word-diff") or "(sin cambios)"
         except Exception:
             return "(sin cambios)"
+
+    def get_gitignore_content(self) -> str:
+        gitignore_path = os.path.join(self.repo.working_tree_dir, ".gitignore")
+        if os.path.exists(gitignore_path):
+            with open(gitignore_path) as f:
+                return f.read()
+        return "(el archivo .gitignore no existe)"
+
+    def add_to_gitignore(self, pattern: str) -> None:
+        gitignore_path = os.path.join(self.repo.working_tree_dir, ".gitignore")
+        content = ""
+        if os.path.exists(gitignore_path):
+            with open(gitignore_path) as f:
+                content = f.read()
+            if pattern in content.split("\n"):
+                return
+        with open(gitignore_path, "a") as f:
+            if content and not content.endswith("\n"):
+                f.write("\n")
+            f.write(pattern + "\n")

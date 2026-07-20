@@ -48,6 +48,8 @@ class GitCriolloApp(App):
         ("T", "eliminar_tag", "Tag-"),
         ("y", "cherry_pick", "Cherry"),
         ("r", "comando_personalizado", "Cmd"),
+        ("i", "ver_gitignore", ".gitignore"),
+        ("I", "agregar_gitignore", "Ignore"),
         ("?", "ayuda", "Ayuda"),
         ("C", "uncommitted", "Cambios"),
     ]
@@ -94,7 +96,7 @@ class GitCriolloApp(App):
                 Label("", id="info_rama"),
                 Label(
                     "[dim][[n]] Rama  [[c]] Checkout  [[d]] Borrar  [[m]] Merge  "
-                    "[[C]] Cambios  [[?]] Ayuda[/dim]",
+                    "[[C]] Cambios  [[i]] .gitignore  [[?]] Ayuda[/dim]",
                     id="atajos_help"
                 ),
                 classes="columna"
@@ -585,3 +587,32 @@ class GitCriolloApp(App):
                     self._notify_error(e)
 
         self.push_screen(VentanaComando(), p)
+
+    def action_ver_gitignore(self) -> None:
+        try:
+            contenido = self.git.get_gitignore_content()
+            self.push_screen(VentanaResultado(".gitignore", contenido))
+        except Exception as e:
+            self._notify_error(e)
+
+    def action_agregar_gitignore(self) -> None:
+        focused = self.focused
+        if not focused or focused.id != "lista_unstaged":
+            self.notify("Seleccioná un archivo no trackeado en el panel de estado.", severity="warning")
+            return
+        item = focused.highlighted_child
+        if not item:
+            return
+        ruta = getattr(item, "archivo_ruta", None)
+        if not ruta:
+            return
+        info = self.git.get_status()
+        if ruta not in info.untracked:
+            self.notify("Solo se puede ignorar archivos no trackeados.", severity="warning")
+            return
+        try:
+            self.git.add_to_gitignore(ruta)
+            self.notify(f"Ignorado: {ruta}")
+            self.actualizar_status()
+        except Exception as e:
+            self._notify_error(e)
