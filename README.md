@@ -71,10 +71,14 @@ git_criollo/
 ├── __init__.py          # package marker
 ├── __main__.py          # entry point (python -m git_criollo)
 ├── ayuda.py             # pantalla de ayuda (VentanaAyuda)
+├── diff_utils.py        # formateo de diff con word-diff coloreado
 ├── git_service.py       # lógica Git (dataclasses + GitService)
-└── ui.py                # widgets Textual (modales + App)
+├── ui.py                # App principal (GitCriolloApp)
+└── ventanas.py          # todos los ModalScreen
 ```
 
 - `git_service.py` — cero imports de Textual, solo `GitPython` y `dataclasses`. Devuelve objetos planos (`BranchInfo`, `CommitInfo`, `CommitDetail`, `StatusInfo`). Testeable sin terminal.
-- `ui.py` — cero imports de `GitPython`. Solo arma widgets y delega en `GitService`.
+- `diff_utils.py` — función `_diff_coloreado()` pura, sin imports de Textual.
+- `ventanas.py` — todos los `ModalScreen` (input, confirmación, diff, detalle, cambios sin commit, etc.). Usa Textual pero no `GitPython`.
+- `ui.py` — cero imports de `GitPython`. Solo `GitCriolloApp` que delega en `GitService` y monta las ventanas de `ventanas.py`.
 - `ayuda.py` — define la ventana modal de ayuda con todos los atajos y descripciones.

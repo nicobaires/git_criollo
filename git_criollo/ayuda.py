@@ -86,3 +86,4 @@ class VentanaAyuda(ModalScreen):
 
     def action_quit(self) -> None:
         self.dismiss()
+
