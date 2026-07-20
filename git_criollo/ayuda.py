@@ -6,21 +6,21 @@ from textual.containers import Vertical, Horizontal
 
 SECCIONES = [
     ("RAMAS", [
-        ("N", "Nueva rama:", "Crear una rama local a partir del commit actual."),
-        ("C", "Checkout:", "Cambiar a la rama seleccionada. Si es remota crea una local con tracking."),
-        ("D", "Borrar rama:", "Eliminar la rama local seleccionada (pide confirmación)."),
-        ("M", "Merge:", "Fusionar la rama seleccionada en la actual (pide confirmación)."),
+        ("n", "Nueva rama:", "Crear una rama local a partir del commit actual."),
+        ("c", "Checkout:", "Cambiar a la rama seleccionada. Si es remota crea una local con tracking."),
+        ("d", "Borrar rama:", "Eliminar la rama local seleccionada (pide confirmación)."),
+        ("m", "Merge:", "Fusionar la rama seleccionada en la actual (pide confirmación)."),
     ]),
     ("SINCRONIZACIÓN", [
-        ("P", "Pull:", "Traer cambios del remoto (git pull)."),
-        ("U", "Push:", "Subir commits locales al remoto (git push)."),
-        ("F", "Fetch:", "Bajar referencias remotas sin merge (git fetch)."),
+        ("p", "Pull:", "Traer cambios del remoto (git pull)."),
+        ("u", "Push:", "Subir commits locales al remoto (git push)."),
+        ("f", "Fetch:", "Bajar referencias remotas sin merge (git fetch)."),
     ]),
     ("CAMBIOS", [
-        ("A", "Stage All:", "Agregar todos los archivos al stage (git add -A)."),
-        ("W", "Commit:", "Abrir modal para escribir mensaje y confirmar (git commit)."),
-        ("E", "Amend:", "Modificar el mensaje del último commit (git commit --amend)."),
-        ("V", "Ver Diff:", "Mostrar el diff del archivo seleccionado en el panel de estado."),
+        ("a", "Stage All:", "Agregar todos los archivos al stage (git add -A)."),
+        ("w", "Commit:", "Abrir modal para escribir mensaje y confirmar (git commit)."),
+        ("e", "Amend:", "Modificar el mensaje del último commit (git commit --amend)."),
+        ("v", "Ver Diff:", "Mostrar el diff del archivo seleccionado en el panel de estado."),
         ("C", "Cambios sin commit:", "Abrir pantalla completa con lista de archivos y diff coloreado. Enter stage/unstage, flechas cambian el diff."),
         ("Tab", "Ciclo foco:", "Navegar entre Ramas → Staged → Unstaged → Historial."),
     ]),
@@ -30,18 +30,18 @@ SECCIONES = [
     ]),
     ("HISTORIAL", [
         ("Enter", "Detalle:", "Ver autor, fecha, mensaje y diff del commit seleccionado."),
-        ("G", "Toggle Graph:", "Alternar entre lista de commits y log gráfico."),
-        ("L", " +Commits:", "Cargar 20 commits más en el historial."),
+        ("g", "Toggle Graph:", "Alternar entre lista de commits y log gráfico."),
+        ("l", " +Commits:", "Cargar 20 commits más en el historial."),
     ]),
     ("TAGS", [
         ("t", "Crear Tag:", "Crear un tag ligero con el nombre que se ingrese."),
         ("T", "Borrar Tag:", "Eliminar el tag seleccionado en la lista (pide confirmación)."),
     ]),
     ("OTROS", [
-        ("Y", "Cherry-Pick:", "Aplicar un commit de otra rama por su SHA."),
-        ("R", "Comando:", "Ejecutar cualquier comando git personalizado (sin prefijo 'git ')."),
+        ("y", "Cherry-Pick:", "Aplicar un commit de otra rama por su SHA."),
+        ("r", "Comando:", "Ejecutar cualquier comando git personalizado (sin prefijo 'git ')."),
         ("?", "Ayuda:", "Mostrar esta pantalla de ayuda completa."),
-        ("Q", "Salir:", "Cerrar GitCriollo."),
+        ("q", "Salir:", "Cerrar GitCriollo."),
     ]),
 ]
 
