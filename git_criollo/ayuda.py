@@ -47,6 +47,7 @@ SECCIONES = [
     ("OTROS", [
         ("y", "Cherry-Pick:", "Aplicar un commit de otra rama por su SHA."),
         ("r", "Comando:", "Ejecutar cualquier comando git personalizado (sin prefijo 'git ')."),
+        ("F5", "Refrescar:", "Actualizar manualmente toda la interfaz."),
         ("?", "Ayuda:", "Mostrar esta pantalla de ayuda completa."),
         ("q", "Salir:", "Cerrar GitCriollo."),
     ]),
@@ -93,4 +94,5 @@ class VentanaAyuda(ModalScreen):
 
     def action_quit(self) -> None:
         self.dismiss()
+
 
