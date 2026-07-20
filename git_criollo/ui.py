@@ -356,6 +356,7 @@ class VentanaUncommitted(ModalScreen):
 
     def on_mount(self) -> None:
         self._archivos: list[tuple[str, bool]] = []  # (ruta, is_staged)
+        self._ultima_ruta: str | None = None
         self._refrescar()
 
     @property
@@ -387,9 +388,20 @@ class VentanaUncommitted(ModalScreen):
             item.archivo_staged = False
             lista.append(item)
 
-        if self._archivos:
-            lista.index = 0
-            self._actualizar_diff(self._archivos[0][0], self._archivos[0][1])
+        if not self._archivos:
+            return
+
+        # Restore previous selection if possible
+        idx = 0
+        if self._ultima_ruta:
+            for i, (r, s) in enumerate(self._archivos):
+                if r == self._ultima_ruta:
+                    idx = i
+                    break
+        lista.index = idx
+        ruta, staged = self._archivos[idx]
+        self._ultima_ruta = ruta
+        self._actualizar_diff(ruta, staged)
 
     def _actualizar_diff(self, ruta: str, staged: bool) -> None:
         container = self.query_one("#uc_diff_container", ScrollableContainer)
@@ -409,6 +421,7 @@ class VentanaUncommitted(ModalScreen):
         ruta = getattr(item, "archivo_ruta", None)
         staged = getattr(item, "archivo_staged", False)
         if ruta:
+            self._ultima_ruta = ruta
             self._actualizar_diff(ruta, staged)
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
@@ -418,8 +431,9 @@ class VentanaUncommitted(ModalScreen):
         ruta = getattr(item, "archivo_ruta", None)
         if not ruta:
             return
-        staged = getattr(item, "archivo_staged", False)
+        self._ultima_ruta = ruta
         try:
+            staged = getattr(item, "archivo_staged", False)
             if staged:
                 self.git.unstage_file(ruta)
             else:
@@ -1049,5 +1063,4 @@ class GitCriolloApp(App):
 
         self.push_screen(VentanaComando(), p)
 
-def nada():
-    ...
+

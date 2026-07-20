@@ -129,7 +129,10 @@ class GitService:
         try:
             if staged:
                 return self.repo.git.diff("--cached", "--word-diff", "--", path) or "(sin cambios)"
-            return self.repo.git.diff(None, "--word-diff", "--", path) or "(sin cambios)"
+            result = self.repo.git.diff(None, "--word-diff", "--", path)
+            if not result and path in self.repo.untracked_files:
+                result = self.repo.git.diff("--no-index", "/dev/null", path, "--word-diff")
+            return result or "(sin cambios)"
         except Exception as e:
             return f"Error al obtener diff: {e}"
 
