@@ -1,4 +1,5 @@
 import os
+import re
 
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, ListView, ListItem, Label, Input, Button, TextArea, Static
@@ -113,20 +114,41 @@ class VentanaStashPush(ModalScreen):
 # --- MODAL: VER DIFF ---
 
 def _diff_coloreado(diff: str) -> str:
-    lines = []
-    for line in diff.split("\n"):
-        safe = line.replace("[", "\\[")
-        if line.startswith("diff --git") or line.startswith("index") or line.startswith("---") or line.startswith("+++"):
-            lines.append(f"[#888888]{safe}[/]")
-        elif line.startswith("@@"):
-            lines.append(f"[#00afff]{safe}[/]")
-        elif line.startswith("+"):
-            lines.append(f"[#00ff00]{safe}[/]")
-        elif line.startswith("-"):
-            lines.append(f"[#ff5f5f]{safe}[/]")
+    result = []
+    for raw in diff.split("\n"):
+        line_style = None
+        if raw.startswith("diff --git") or raw.startswith("index") or raw.startswith("---") or raw.startswith("+++"):
+            line_style = "#888888"
+        elif raw.startswith("@@"):
+            line_style = "#00afff"
+        elif raw.startswith("+"):
+            line_style = "#00ff00"
+        elif raw.startswith("-"):
+            line_style = "#ff5f5f"
+
+        parts = []
+        pos = 0
+        for m in re.finditer(r"\[-([^\]]*?)-\]|\{\+([^}]*?)\+\}", raw):
+            if m.start() > pos:
+                parts.append(raw[pos:m.start()].replace("[", "\\["))
+            deleted = m.group(1)
+            added = m.group(2)
+            content = (deleted or added).replace("[", "\\[")
+            if deleted is not None:
+                parts.append(f"[#ff5f5f on #330000]{content}[/]")
+            else:
+                parts.append(f"[#00ff00 on #003300]{content}[/]")
+            pos = m.end()
+        if pos < len(raw):
+            parts.append(raw[pos:].replace("[", "\\["))
+
+        line_str = "".join(parts)
+        if line_style:
+            result.append(f"[{line_style}]{line_str}[/]")
         else:
-            lines.append(safe)
-    return "\n".join(lines)
+            result.append(line_str)
+
+    return "\n".join(result)
 
 
 class VentanaDiff(ModalScreen):
@@ -1026,3 +1048,6 @@ class GitCriolloApp(App):
                     self._notify_error(e)
 
         self.push_screen(VentanaComando(), p)
+
+def nada():
+    ...

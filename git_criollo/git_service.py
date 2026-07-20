@@ -128,8 +128,8 @@ class GitService:
     def get_diff(self, path: str, staged: bool = False) -> str:
         try:
             if staged:
-                return self.repo.git.diff("--cached", "--", path) or "(sin cambios)"
-            return self.repo.git.diff(None, "--", path) or "(sin cambios)"
+                return self.repo.git.diff("--cached", "--word-diff", "--", path) or "(sin cambios)"
+            return self.repo.git.diff(None, "--word-diff", "--", path) or "(sin cambios)"
         except Exception as e:
             return f"Error al obtener diff: {e}"
 
@@ -216,12 +216,12 @@ class GitService:
 
     def get_working_diff(self) -> str:
         try:
-            return self.repo.git.diff(None) or "(sin cambios)"
+            return self.repo.git.diff(None, "--word-diff") or "(sin cambios)"
         except Exception:
             return "(sin cambios)"
 
     def get_staged_diff(self) -> str:
         try:
-            return self.repo.git.diff("--cached") or "(sin cambios)"
+            return self.repo.git.diff("--cached", "--word-diff") or "(sin cambios)"
         except Exception:
             return "(sin cambios)"
