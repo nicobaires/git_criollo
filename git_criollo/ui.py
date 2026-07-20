@@ -289,6 +289,170 @@ class VentanaResultado(ModalScreen):
     def action_quit(self) -> None: self.dismiss()
 
 
+# --- MODAL: CAMBIOS SIN COMMIT ---
+class VentanaUncommitted(ModalScreen):
+    BINDINGS = [
+        ("escape", "quit", "Cerrar"),
+        ("q", "quit", "Cerrar"),
+        ("v", "ver_diff", "Ver Diff"),
+        ("a", "stage_all", "Stage All"),
+        ("w", "commit_cambios", "Commit"),
+    ]
+    CSS = """
+    VentanaUncommitted { align: center middle; background: rgba(0,0,0,0.85); }
+    #dialog_uc { padding: 1; background: #121212; border: heavy #00afff; width: 90%; height: 90%; }
+    #uc_body { height: 1fr; }
+    #uc_files { width: 30%; height: 100%; border-right: solid #333; }
+    #uc_file_list { height: 1fr; margin: 1; border: tall #444; }
+    #uc_file_list:focus { border: tall #00afff; }
+    #uc_file_list_scroll { height: 1fr; }
+    #uc_actions { margin: 1 0 0 2; color: #888; height: auto; }
+    #uc_diff_panel { width: 70%; height: 100%; }
+    #uc_diff_container { height: 1fr; }
+    #uc_diff_container Static { background: #1a1a1a; padding: 1; }
+    #uc_diff_header { margin: 0 0 0 2; height: auto; }
+    """
+    def compose(self) -> ComposeResult:
+        yield Vertical(
+            Label("[bold #00afff]── CAMBIOS SIN COMMIT ──[/]"),
+            Horizontal(
+                Vertical(
+                    Label("[bold]Archivos[/] (Enter: stage/unstage)"),
+                    ListView(id="uc_file_list"),
+                    Label("[dim][A] Stage All  [W] Commit  [V] Ver Diff  [Q] Cerrar[/dim]", id="uc_actions"),
+                    id="uc_files",
+                ),
+                Vertical(
+                    Label("[bold]Diff[/]", id="uc_diff_header"),
+                    ScrollableContainer(Static("Seleccioná un archivo", markup=True), id="uc_diff_container"),
+                    id="uc_diff_panel",
+                ),
+                id="uc_body",
+            ),
+            id="dialog_uc",
+        )
+
+    def on_mount(self) -> None:
+        self._archivos: list[tuple[str, bool]] = []  # (ruta, is_staged)
+        self._refrescar()
+
+    @property
+    def git(self):
+        return self.app.git
+
+    def _refrescar(self) -> None:
+        info = self.git.get_status()
+        lista = self.query_one("#uc_file_list", ListView)
+        lista.clear()
+        self._archivos = []
+
+        for f in info.staged:
+            self._archivos.append((f, True))
+            item = ListItem(Label(f"  ✔ {f}"))
+            item.archivo_ruta = f
+            item.archivo_staged = True
+            lista.append(item)
+        for f in info.unstaged:
+            self._archivos.append((f, False))
+            item = ListItem(Label(f"  💥 M: {f}"))
+            item.archivo_ruta = f
+            item.archivo_staged = False
+            lista.append(item)
+        for f in info.untracked:
+            self._archivos.append((f, False))
+            item = ListItem(Label(f"  ❓ ?: {f}"))
+            item.archivo_ruta = f
+            item.archivo_staged = False
+            lista.append(item)
+
+        if self._archivos:
+            lista.index = 0
+            self._actualizar_diff(self._archivos[0][0], self._archivos[0][1])
+
+    def _actualizar_diff(self, ruta: str, staged: bool) -> None:
+        container = self.query_one("#uc_diff_container", ScrollableContainer)
+        if staged:
+            raw = self.git.get_diff(ruta, staged=True)
+        else:
+            raw = self.git.get_diff(ruta, staged=False)
+        header = self.query_one("#uc_diff_header", Label)
+        header.update(f"[bold]{'[Staged] ' if staged else ''}{ruta}[/]")
+        container.remove_children()
+        container.mount(Static(_diff_coloreado(raw), markup=True))
+
+    def on_list_view_highlighted(self, event: ListView.Highlighted) -> None:
+        item = event.item
+        if not item:
+            return
+        ruta = getattr(item, "archivo_ruta", None)
+        staged = getattr(item, "archivo_staged", False)
+        if ruta:
+            self._actualizar_diff(ruta, staged)
+
+    def on_list_view_selected(self, event: ListView.Selected) -> None:
+        item = event.item
+        if not item:
+            return
+        ruta = getattr(item, "archivo_ruta", None)
+        if not ruta:
+            return
+        staged = getattr(item, "archivo_staged", False)
+        try:
+            if staged:
+                self.git.unstage_file(ruta)
+            else:
+                self.git.stage_file(ruta)
+            self._refrescar()
+        except Exception as e:
+            self._notify_error(e)
+
+    def action_ver_diff(self) -> None:
+        lista = self.query_one("#uc_file_list", ListView)
+        item = lista.highlighted_child
+        if not item:
+            self.notify("Seleccioná un archivo.", severity="warning")
+            return
+        ruta = getattr(item, "archivo_ruta", None)
+        if not ruta:
+            return
+        staged = getattr(item, "archivo_staged", False)
+        diff = self.git.get_diff(ruta, staged=staged)
+        self.app.push_screen(VentanaDiff(ruta, diff))
+
+    def action_stage_all(self) -> None:
+        try:
+            self.git.stage_all()
+            self._refrescar()
+        except Exception as e:
+            self._notify_error(e)
+
+    def action_commit_cambios(self) -> None:
+        info = self.git.get_status()
+        if not info.staged and not info.untracked and not info.is_empty_repo:
+            self.notify("No hay cambios para confirmar.", severity="warning")
+            return
+
+        def guardar(mensaje: str | None) -> None:
+            if mensaje:
+                try:
+                    self.git.commit(mensaje)
+                    self._refrescar()
+                except Exception as e:
+                    self._notify_error(e)
+
+        self.app.push_screen(VentanaCommit(), guardar)
+
+    def _notify_error(self, e: Exception) -> None:
+        if isinstance(e, GitCommandError):
+            msg = e.stderr.strip() if e.stderr else str(e)
+        else:
+            msg = str(e)
+        self.notify(f"Error: {msg}", severity="error")
+
+    def action_quit(self) -> None:
+        self.dismiss()
+
+
 # --- APLICACIÓN PRINCIPAL ---
 class GitCriolloApp(App):
     BINDINGS = [
@@ -313,6 +477,7 @@ class GitCriolloApp(App):
         ("y", "cherry_pick", "Cherry"),
         ("r", "comando_personalizado", "Cmd"),
         ("?", "ayuda", "Ayuda"),
+        ("C", "uncommitted", "Cambios"),
     ]
 
     CSS = """
@@ -559,6 +724,9 @@ class GitCriolloApp(App):
 
     def action_ayuda(self) -> None:
         self.push_screen(VentanaAyuda())
+
+    def action_uncommitted(self) -> None:
+        self.push_screen(VentanaUncommitted())
 
     def action_nueva_rama(self) -> None:
         def p(n: str | None):

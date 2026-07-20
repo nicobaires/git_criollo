@@ -36,6 +36,7 @@ Presioná `?` dentro de la aplicación para ver la ayuda completa.
 | `w` | Commit | Crear un commit |
 | `e` | Amend | Modificar el mensaje del último commit |
 | `v` | Ver Diff | Mostrar diff del archivo seleccionado |
+| `C` | Cambios sin commit | Pantalla completa con lista de archivos + diff coloreado |
 | `Tab` | Ciclo foco | Navegar entre paneles |
 | | **Stash** | |
 | `z` | Stash Push | Guardar cambios en el stash |
@@ -60,7 +61,7 @@ Presioná `?` dentro de la aplicación para ver la ayuda completa.
 - **Cherry-pick**: aplicar commits de otras ramas por SHA
 - **Comandos personalizados**: ejecutar cualquier comando git y ver el resultado
 - **Auto-refresh**: el panel de estado se actualiza cada 5 segundos
-- **Navegación**: Tab para ciclar el foco entre paneles (el borde del panel activo cambia de color), ayuda completa con `?`
+- **Navegación**: Tab para ciclar el foco entre paneles (el borde del panel activo cambia de color), ayuda completa con `?`, pantalla de cambios sin commit con `C`
 
 ## Estructura del proyecto
 

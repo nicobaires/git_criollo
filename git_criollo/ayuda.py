@@ -21,6 +21,7 @@ SECCIONES = [
         ("W", "Commit:", "Abrir modal para escribir mensaje y confirmar (git commit)."),
         ("E", "Amend:", "Modificar el mensaje del último commit (git commit --amend)."),
         ("V", "Ver Diff:", "Mostrar el diff del archivo seleccionado en el panel de estado."),
+        ("C", "Cambios sin commit:", "Abrir pantalla completa con lista de archivos y diff coloreado. Enter stage/unstage, flechas cambian el diff."),
         ("Tab", "Ciclo foco:", "Navegar entre Ramas → Staged → Unstaged → Historial."),
     ]),
     ("STASH", [

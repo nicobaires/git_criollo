@@ -213,3 +213,15 @@ class GitService:
             return result
         except Exception as e:
             return f"Error: {e}"
+
+    def get_working_diff(self) -> str:
+        try:
+            return self.repo.git.diff(None) or "(sin cambios)"
+        except Exception:
+            return "(sin cambios)"
+
+    def get_staged_diff(self) -> str:
+        try:
+            return self.repo.git.diff("--cached") or "(sin cambios)"
+        except Exception:
+            return "(sin cambios)"
