@@ -36,7 +36,7 @@ class VentanaConfirmarBorrado(ModalScreen[bool]):
     BINDINGS = [("escape", "cancel", "Cancelar")]
     CSS = """
     VentanaConfirmarBorrado { align: center middle; background: rgba(0,0,0,0.6); }
-    #dialog_delete { padding: 1 2; background: #262626; border: heavy #ff5f5f; width: 50; height: 10; }
+    #dialog_delete { padding: 1 2; background: #262626; border: heavy #ff5f5f; width: 50; height: 12; }
     #buttons { margin-top: 1; height: 3; align: center middle; }
     Button { margin: 0 1; }
     """
@@ -45,6 +45,7 @@ class VentanaConfirmarBorrado(ModalScreen[bool]):
         yield Vertical(
             Label(f"[bold #ff5f5f]¿Borrar Rama?[/]\n¿Seguro que querés eliminar [bold]{self.nombre_rama}[/]?"),
             Horizontal(Button("Sí", variant="error", id="s"), Button("No", variant="primary", id="n"), id="buttons"),
+            Label("[dim][ESC] Cancelar[/dim]"),
             id="dialog_delete"
         )
     def on_button_pressed(self, event: Button.Pressed) -> None: self.dismiss(True if event.button.id == "s" else False)
@@ -56,7 +57,7 @@ class VentanaConfirmarMerge(ModalScreen[bool]):
     BINDINGS = [("escape", "cancel", "Cancelar")]
     CSS = """
     VentanaConfirmarMerge { align: center middle; background: rgba(0,0,0,0.6); }
-    #dialog_merge { padding: 1 2; background: #262626; border: heavy #00afd7; width: 56; height: 10; }
+    #dialog_merge { padding: 1 2; background: #262626; border: heavy #00afd7; width: 56; height: 12; }
     #buttons { margin-top: 1; height: 3; align: center middle; }
     Button { margin: 0 1; }
     """
@@ -65,6 +66,7 @@ class VentanaConfirmarMerge(ModalScreen[bool]):
         yield Vertical(
             Label(f"[bold #00afd7]¿Mergear?[/]\n¿Mergear [bold]{self.nombre_rama}[/] en la rama actual?"),
             Horizontal(Button("Sí", variant="primary", id="s"), Button("No", variant="default", id="n"), id="buttons"),
+            Label("[dim][ESC] Cancelar[/dim]"),
             id="dialog_merge"
         )
     def on_button_pressed(self, event: Button.Pressed) -> None: self.dismiss(True if event.button.id == "s" else False)
@@ -237,7 +239,7 @@ class VentanaConfirmarBorradoTag(ModalScreen[bool]):
     BINDINGS = [("escape", "cancel", "Cancelar")]
     CSS = """
     VentanaConfirmarBorradoTag { align: center middle; background: rgba(0,0,0,0.6); }
-    #dialog_tag_del { padding: 1 2; background: #262626; border: heavy #ff5f5f; width: 50; height: 10; }
+    #dialog_tag_del { padding: 1 2; background: #262626; border: heavy #ff5f5f; width: 50; height: 12; }
     #buttons { margin-top: 1; height: 3; align: center middle; }
     Button { margin: 0 1; }
     """
@@ -246,6 +248,7 @@ class VentanaConfirmarBorradoTag(ModalScreen[bool]):
         yield Vertical(
             Label(f"[bold #ff5f5f]¿Borrar Tag?[/]\n¿Seguro que querés eliminar el tag [bold]{self.nombre_tag}[/]?"),
             Horizontal(Button("Sí", variant="error", id="s"), Button("No", variant="primary", id="n"), id="buttons"),
+            Label("[dim][ESC] Cancelar[/dim]"),
             id="dialog_tag_del"
         )
     def on_button_pressed(self, event: Button.Pressed) -> None: self.dismiss(True if event.button.id == "s" else False)
@@ -339,7 +342,7 @@ class VentanaUncommitted(ModalScreen):
             Label("[bold #00afff]── CAMBIOS SIN COMMIT ──[/]"),
             Horizontal(
                 Vertical(
-                    Label("[bold]Archivos[/] (Enter: stage/unstage)"),
+                    Label("[bold]Archivos[/] (Enter: stage/unstage)", id="uc_title"),
                     ListView(id="uc_file_list"),
                     Label("[dim][[a]] Stage All  [[w]] Commit  [[v]] Ver Diff  [[q]] Cerrar[/dim]", id="uc_actions"),
                     id="uc_files",
@@ -387,6 +390,10 @@ class VentanaUncommitted(ModalScreen):
             item.archivo_ruta = f
             item.archivo_staged = False
             lista.append(item)
+
+        titulo = self.query_one("#uc_title", Label)
+        n = len(self._archivos)
+        titulo.update(f"[bold]Archivos ({n})[/] (Enter: stage/unstage)")
 
         if not self._archivos:
             return
@@ -480,10 +487,12 @@ class VentanaUncommitted(ModalScreen):
 
     def _notify_error(self, e: Exception) -> None:
         if isinstance(e, GitCommandError):
-            msg = e.stderr.strip() if e.stderr else str(e)
+            msg = (e.stderr or str(e)).strip()
+            if "merge" in msg.lower() and "conflict" in msg.lower():
+                msg = "⚠️ Conflictos de merge. Resolvelos y hacé commit.\n" + msg
         else:
             msg = str(e)
-        self.notify(f"Error: {msg}", severity="error")
+        self.notify(f"Error: {msg}", severity="error", timeout=10)
 
     def action_quit(self) -> None:
         self.dismiss()
@@ -557,7 +566,8 @@ class GitCriolloApp(App):
                 ListView(id="lista_ramas"),
                 Label("", id="info_rama"),
                 Label(
-                    "[dim]Presioná [bold]?[/bold] para ayuda completa[/dim]",
+                    "[dim][[n]] Rama  [[c]] Checkout  [[d]] Borrar  [[m]] Merge  "
+                    "[[C]] Cambios  [[?]] Ayuda[/dim]",
                     id="atajos_help"
                 ),
                 classes="columna"
@@ -594,6 +604,9 @@ class GitCriolloApp(App):
     def actualizar_header(self) -> None:
         try:
             info = self.git.get_branches()
+            if info.is_detached:
+                self.sub_title = "[bold #ff5f5f]HEAD suelto (detached)[/]"
+                return
             a = info.ahead.get(info.active, 0)
             b = info.behind.get(info.active, 0)
             sufijo = f" [+{a} -{b}]" if a or b else ""
@@ -714,10 +727,12 @@ class GitCriolloApp(App):
 
     def _notify_error(self, e: Exception) -> None:
         if isinstance(e, GitCommandError):
-            msg = e.stderr.strip() if e.stderr else str(e)
+            msg = (e.stderr or str(e)).strip()
+            if "merge" in msg.lower() and "conflict" in msg.lower():
+                msg = "⚠️ Conflictos de merge. Resolvelos en los archivos y después hacé commit.\n" + msg
         else:
             msg = str(e)
-        self.notify(f"Error: {msg}", severity="error")
+        self.notify(f"Error: {msg}", severity="error", timeout=15)
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         lista_id = event.list_view.id
@@ -1062,5 +1077,9 @@ class GitCriolloApp(App):
                     self._notify_error(e)
 
         self.push_screen(VentanaComando(), p)
+
+
+def n():
+    ...
 
 

@@ -8,6 +8,7 @@ class BranchInfo:
     branches: list[str]
     remotes: list[str] = field(default_factory=list)
     tags: list[str] = field(default_factory=list)
+    is_detached: bool = False
     ahead: dict[str, int] = field(default_factory=dict)
     behind: dict[str, int] = field(default_factory=dict)
 
@@ -76,6 +77,7 @@ class GitService:
             branches=branches,
             remotes=remotes,
             tags=tags,
+            is_detached=self.repo.head.is_detached,
             ahead=ahead,
             behind=behind,
         )
