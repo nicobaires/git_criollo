@@ -1,4 +1,5 @@
 import os
+import tempfile
 from dataclasses import dataclass, field
 from git import Repo
 
@@ -28,6 +29,21 @@ class CommitDetail:
     date: str
     message: str
     diff: str
+
+
+@dataclass
+class DiffHunk:
+    header: str
+    lines: list[str]
+    raw: str
+
+
+@dataclass
+class ConflictRegion:
+    start: int
+    end: int
+    ours: str
+    theirs: str
 
 
 @dataclass
@@ -171,10 +187,18 @@ class GitService:
         self.repo.git.commit("--amend", "-m", message)
 
     def pull(self) -> None:
-        self.repo.remotes.origin.pull()
+        try:
+            remote = self.repo.remote()
+            remote.pull()
+        except Exception:
+            self.repo.remotes.origin.pull()
 
     def push(self, branch: str) -> None:
-        self.repo.remotes.origin.push(branch)
+        try:
+            remote = self.repo.remote()
+            remote.push(branch)
+        except Exception:
+            self.repo.remotes.origin.push(branch)
 
     def fetch(self) -> None:
         remote = self.repo.remote()
@@ -232,12 +256,161 @@ class GitService:
         except Exception:
             return "(sin cambios)"
 
+    def parse_diff_hunks(self, path: str) -> list[DiffHunk]:
+        raw = self.repo.git.diff(None, "--unified=3", "--", path)
+        if not raw:
+            return []
+        lines = raw.split("\n")
+        header_end = 0
+        for i, line in enumerate(lines):
+            if line.startswith("+++"):
+                header_end = i + 1
+                break
+        header_lines = lines[:header_end]
+        hunks = []
+        current_header = ""
+        current_lines: list[str] = []
+        in_hunk = False
+        for line in lines[header_end:]:
+            if line.startswith("@@"):
+                if in_hunk and current_lines:
+                    hunks.append(DiffHunk(
+                        header=current_header,
+                        lines=current_lines,
+                        raw=current_header + "\n" + "\n".join(current_lines)
+                    ))
+                current_header = line
+                current_lines = []
+                in_hunk = True
+            elif in_hunk:
+                current_lines.append(line)
+        if in_hunk and current_lines:
+            hunks.append(DiffHunk(
+                header=current_header,
+                lines=current_lines,
+                raw=current_header + "\n" + "\n".join(current_lines)
+            ))
+        return hunks
+
+    def stage_hunk(self, path: str, hunk: DiffHunk) -> None:
+        raw_diff = self.repo.git.diff(None, "--unified=3", "--", path)
+        header_part = raw_diff.split("\n@@")[0] + "\n"
+        patch = header_part + hunk.raw + "\n"
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.patch', delete=False) as f:
+            f.write(patch)
+            f.flush()
+            try:
+                self.repo.git.apply("--cached", f.name)
+            finally:
+                os.unlink(f.name)
+
     def get_gitignore_content(self) -> str:
         gitignore_path = os.path.join(self.repo.working_tree_dir, ".gitignore")
         if os.path.exists(gitignore_path):
             with open(gitignore_path) as f:
                 return f.read()
         return "(el archivo .gitignore no existe)"
+
+    def get_commits_for_rebase(self, sha: str) -> list[CommitInfo]:
+        base = f"{sha}~1"
+        commits = []
+        try:
+            for c in self.repo.iter_commits(f"{base}..HEAD", reverse=True):
+                commits.append(CommitInfo(
+                    hash=c.hexsha[:7],
+                    message=c.message.split("\n")[0],
+                    author=c.author.name,
+                ))
+        except Exception:
+            pass
+        return commits
+
+    def get_parent_sha(self, sha: str) -> str | None:
+        try:
+            commit = self.repo.commit(sha)
+            if commit.parents:
+                return commit.parents[0].hexsha
+        except Exception:
+            pass
+        return None
+
+    def run_rebase(self, base_sha: str, todos: list[tuple[str, str]]) -> None:
+        todo_lines = [f"{action} {sha}" for sha, action in todos]
+        todo_content = "\n".join(todo_lines) + "\n"
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.todo', delete=False) as f:
+            f.write(todo_content)
+            todo_path = f.name
+        try:
+            self.repo.git.execute(
+                ["git", "rebase", "-i", base_sha],
+                env={**os.environ, "GIT_SEQUENCE_EDITOR": f"cp {todo_path}"},
+            )
+        finally:
+            os.unlink(todo_path)
+
+    def is_merge_in_progress(self) -> bool:
+        try:
+            return os.path.exists(os.path.join(self.repo.working_tree_dir, ".git", "MERGE_HEAD"))
+        except Exception:
+            return False
+
+    def get_conflicted_files(self) -> list[str]:
+        try:
+            result = self.repo.git.diff("--name-only", "--diff-filter=U")
+            return [f for f in result.split("\n") if f.strip()]
+        except Exception:
+            return []
+
+    def get_conflict_regions(self, path: str) -> list[ConflictRegion]:
+        full_path = os.path.join(self.repo.working_tree_dir, path)
+        try:
+            with open(full_path) as f:
+                content = f.read()
+        except Exception:
+            return []
+        lines = content.split("\n")
+        regions = []
+        i = 0
+        while i < len(lines):
+            if lines[i].startswith("<<<<<<<"):
+                start = i
+                i += 1
+                ours_lines = []
+                while i < len(lines) and not lines[i].startswith("======="):
+                    ours_lines.append(lines[i])
+                    i += 1
+                if i < len(lines) and lines[i].startswith("======="):
+                    i += 1
+                theirs_lines = []
+                while i < len(lines) and not lines[i].startswith(">>>>>>>"):
+                    theirs_lines.append(lines[i])
+                    i += 1
+                end = i
+                if i < len(lines):
+                    i += 1
+                regions.append(ConflictRegion(
+                    start=start,
+                    end=end,
+                    ours="\n".join(ours_lines),
+                    theirs="\n".join(theirs_lines),
+                ))
+            else:
+                i += 1
+        return regions
+
+    def resolve_conflict_region(self, path: str, region: ConflictRegion, choice: str) -> None:
+        full_path = os.path.join(self.repo.working_tree_dir, path)
+        with open(full_path) as f:
+            lines = f.read().split("\n")
+        if choice == "ours":
+            replacement = region.ours.split("\n")
+        elif choice == "theirs":
+            replacement = region.theirs.split("\n")
+        elif choice == "both":
+            replacement = (region.ours + "\n" + region.theirs).split("\n")
+        new_lines = lines[:region.start] + replacement + lines[region.end + 1:]
+        with open(full_path, "w") as f:
+            f.write("\n".join(new_lines))
 
     def add_to_gitignore(self, pattern: str) -> None:
         gitignore_path = os.path.join(self.repo.working_tree_dir, ".gitignore")

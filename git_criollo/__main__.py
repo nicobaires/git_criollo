@@ -1,3 +1,9 @@
 from git_criollo.ui import GitCriolloApp
 
-GitCriolloApp().run()
+
+def main() -> None:
+    GitCriolloApp().run()
+
+
+if __name__ == "__main__":
+    main()

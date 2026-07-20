@@ -8,3 +8,10 @@ dependencies = [
     "gitpython>=3.1.52",
     "textual>=8.2.8",
 ]
+
+[project.scripts]
+gitcriollo = "git_criollo.__main__:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

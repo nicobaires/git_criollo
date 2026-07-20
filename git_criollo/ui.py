@@ -1,4 +1,5 @@
 import os
+import re
 
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, ListView, ListItem, Label
@@ -6,9 +7,11 @@ from textual.containers import Horizontal, Vertical
 from git import GitCommandError
 
 from git_criollo.git_service import GitService
+from git_criollo.error_utils import notify_error as _notify_error_base
 from git_criollo.ayuda import VentanaAyuda
 from git_criollo.ventanas import (
     VentanaNuevaRama,
+    VentanaStageHunk,
     VentanaConfirmarBorrado,
     VentanaConfirmarMerge,
     VentanaCommit,
@@ -48,6 +51,9 @@ class GitCriolloApp(App):
         ("T", "eliminar_tag", "Tag-"),
         ("y", "cherry_pick", "Cherry"),
         ("r", "comando_personalizado", "Cmd"),
+        ("p", "stage_hunk", "Stage Hunk"),
+        ("R", "rebase", "Rebase"),
+        ("M", "resolver_conflictos", "Merge"),
         ("i", "ver_gitignore", ".gitignore"),
         ("I", "agregar_gitignore", "Ignore"),
         ("?", "ayuda", "Ayuda"),
@@ -96,7 +102,7 @@ class GitCriolloApp(App):
                 Label("", id="info_rama"),
                 Label(
                     "[dim][[n]] Rama  [[c]] Checkout  [[d]] Borrar  [[m]] Merge  "
-                    "[[C]] Cambios  [[i]] .gitignore  [[?]] Ayuda[/dim]",
+                    "[[C]] Cambios  [[p]] Hunk  [[i]] .gitignore  [[?]] Ayuda[/dim]",
                     id="atajos_help"
                 ),
                 classes="columna"
@@ -206,6 +212,9 @@ class GitCriolloApp(App):
             lineas = self.git.get_graph_log(skip=0, n=20)
             for linea in lineas:
                 item = ListItem(Label(f"[dim]{linea}[/dim]"))
+                m = re.search(r'[a-f0-9]{7,}', linea)
+                if m:
+                    item.commit_hash = m.group()
                 lista.append(item)
             self._commit_offset = len(lineas)
         else:
@@ -254,13 +263,7 @@ class GitCriolloApp(App):
         self.query_one(f"#{order[idx]}", ListView).focus()
 
     def _notify_error(self, e: Exception) -> None:
-        if isinstance(e, GitCommandError):
-            msg = (e.stderr or str(e)).strip()
-            if "merge" in msg.lower() and "conflict" in msg.lower():
-                msg = "⚠️ Conflictos de merge. Resolvelos en los archivos y después hacé commit.\n" + msg
-        else:
-            msg = str(e)
-        self.notify(f"Error: {msg}", severity="error", timeout=15)
+        _notify_error_base(self.notify, e, timeout=15)
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         lista_id = event.list_view.id
@@ -493,6 +496,9 @@ class GitCriolloApp(App):
             lineas = self.git.get_graph_log(skip=self._commit_offset, n=n)
             for linea in lineas:
                 item = ListItem(Label(f"[dim]{linea}[/dim]"))
+                m = re.search(r'[a-f0-9]{7,}', linea)
+                if m:
+                    item.commit_hash = m.group()
                 lista.append(item)
             if lineas:
                 self._commit_offset += len(lineas)
@@ -616,3 +622,57 @@ class GitCriolloApp(App):
             self.actualizar_status()
         except Exception as e:
             self._notify_error(e)
+
+    def action_stage_hunk(self) -> None:
+        focused = self.focused
+        if not focused or focused.id != "lista_unstaged":
+            self.notify("Seleccioná un archivo modificado en el panel de estado.", severity="warning")
+            return
+        item = focused.highlighted_child
+        if not item:
+            return
+        ruta = getattr(item, "archivo_ruta", None)
+        if not ruta:
+            return
+        info = self.git.get_status()
+        if ruta in info.untracked:
+            self.notify("No se puede stagear hunks de archivos no trackeados.", severity="warning")
+            return
+        self.push_screen(VentanaStageHunk(ruta), lambda _: self.actualizar_status())
+
+    def action_rebase(self) -> None:
+        lista = self.query_one("#lista_commits", ListView)
+        child = lista.highlighted_child
+        if not child:
+            self.notify("Seleccioná un commit en el historial.", severity="warning")
+            return
+        sha = getattr(child, "commit_hash", None)
+        if not sha:
+            self.notify("Seleccioná un commit en el historial.", severity="warning")
+            return
+        from git_criollo.ventanas import VentanaRebase
+        commits = self.git.get_commits_for_rebase(sha)
+        if len(commits) < 2:
+            self.notify("Se necesitan al menos 2 commits para rebase interactivo.", severity="warning")
+            return
+        def ejecutar(todos):
+            if todos:
+                try:
+                    base_sha = self.git.get_parent_sha(sha)
+                    self.git.run_rebase(base_sha, todos)
+                    self.notify("Rebase completado.")
+                    self.actualizar_pantalla_completa()
+                except Exception as e:
+                    self._notify_error(e)
+        self.push_screen(VentanaRebase(commits), ejecutar)
+
+    def action_resolver_conflictos(self) -> None:
+        if not self.git.is_merge_in_progress():
+            self.notify("No hay conflictos de merge.", severity="warning")
+            return
+        from git_criollo.ventanas import VentanaConflictos
+        archivos = self.git.get_conflicted_files()
+        if not archivos:
+            self.notify("No hay archivos en conflicto.", severity="warning")
+            return
+        self.push_screen(VentanaConflictos(archivos), lambda _: self.actualizar_pantalla_completa())

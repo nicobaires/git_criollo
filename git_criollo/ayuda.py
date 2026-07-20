@@ -21,10 +21,14 @@ SECCIONES = [
         ("w", "Commit:", "Abrir modal para escribir mensaje y confirmar (git commit)."),
         ("e", "Amend:", "Modificar el mensaje del último commit (git commit --amend)."),
         ("v", "Ver Diff:", "Mostrar el diff del archivo seleccionado en el panel de estado."),
+        ("p", "Stage Hunk:", "Stagear hunts individuales del archivo modificado seleccionado."),
         ("C", "Cambios sin commit:", "Abrir pantalla completa con lista de archivos y diff coloreado. Enter stage/unstage, flechas cambian el diff."),
         ("Tab", "Ciclo foco:", "Navegar entre Ramas → Staged → Unstaged → Historial."),
         ("i", "Ver .gitignore:", "Abrir el archivo .gitignore en un modal de lectura."),
         ("I", "Ignorar archivo:", "Agregar el archivo no trackeado seleccionado al .gitignore."),
+    ]),
+    ("CONFLICTOS", [
+        ("M", "Resolver conflictos:", "Abrir resolución de conflictos de merge (ours/theirs/both)."),
     ]),
     ("STASH", [
         ("z", "Stash Push:", "Guardar cambios actuales en el stash (mensaje opcional)."),
@@ -32,6 +36,7 @@ SECCIONES = [
     ]),
     ("HISTORIAL", [
         ("Enter", "Detalle:", "Ver autor, fecha, mensaje y diff del commit seleccionado."),
+        ("R", "Rebase interactivo:", "Abrir rebase interactivo con pick/reword/squash/fixup/drop."),
         ("g", "Toggle Graph:", "Alternar entre lista de commits y log gráfico."),
         ("l", " +Commits:", "Cargar 20 commits más en el historial."),
     ]),

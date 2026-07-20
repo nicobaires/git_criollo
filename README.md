@@ -4,6 +4,21 @@ TUI (Terminal User Interface) para Git construida con [Textual](https://textual.
 
 ## Instalación
 
+### Como herramienta global (recomendado)
+
+```bash
+git clone 
+cd git-criollo
+uv tool install --editable .
+```
+
+Después podés ejecutarlo desde cualquier carpeta que sea un repositorio Git:
+
+```bash
+gitcriollo
+```
+### Modo desarrollo
+
 ```bash
 uv add gitpython textual
 ```
