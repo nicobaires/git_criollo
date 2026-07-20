@@ -76,7 +76,7 @@ class VentanaAyuda(ModalScreen):
             items.append(Label(f"\n[bold #ffaf00]• {titulo}[/]", classes="seccion-titulo"))
             for tecla, accion, descrip in atajos:
                 items.append(Horizontal(
-                    Label(f"[{tecla}]", classes="tecla"),
+                    Label(f"[[{tecla}]]", classes="tecla"),
                     Label(f"{accion}", classes="accion"),
                     Label(f"{descrip}", classes="descrip"),
                     classes="fila",

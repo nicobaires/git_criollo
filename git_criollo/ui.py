@@ -319,7 +319,7 @@ class VentanaUncommitted(ModalScreen):
                 Vertical(
                     Label("[bold]Archivos[/] (Enter: stage/unstage)"),
                     ListView(id="uc_file_list"),
-                    Label("[dim][A] Stage All  [W] Commit  [V] Ver Diff  [Q] Cerrar[/dim]", id="uc_actions"),
+                    Label("[dim][[A]] Stage All  [[W]] Commit  [[V]] Ver Diff  [[Q]] Cerrar[/dim]", id="uc_actions"),
                     id="uc_files",
                 ),
                 Vertical(
