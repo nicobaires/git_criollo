@@ -1,8 +1,8 @@
 import os
 
 from textual.app import App, ComposeResult
-from textual.widgets import Header, Footer, ListView, ListItem, Label, Input, Button, TextArea
-from textual.containers import Horizontal, Vertical
+from textual.widgets import Header, Footer, ListView, ListItem, Label, Input, Button, TextArea, Static
+from textual.containers import Horizontal, Vertical, ScrollableContainer
 from textual.screen import ModalScreen
 from git import GitCommandError
 
@@ -111,18 +111,37 @@ class VentanaStashPush(ModalScreen):
 
 
 # --- MODAL: VER DIFF ---
+
+def _diff_coloreado(diff: str) -> str:
+    lines = []
+    for line in diff.split("\n"):
+        safe = line.replace("[", "\\[")
+        if line.startswith("diff --git") or line.startswith("index") or line.startswith("---") or line.startswith("+++"):
+            lines.append(f"[#888888]{safe}[/]")
+        elif line.startswith("@@"):
+            lines.append(f"[#00afff]{safe}[/]")
+        elif line.startswith("+"):
+            lines.append(f"[#00ff00]{safe}[/]")
+        elif line.startswith("-"):
+            lines.append(f"[#ff5f5f]{safe}[/]")
+        else:
+            lines.append(safe)
+    return "\n".join(lines)
+
+
 class VentanaDiff(ModalScreen):
     BINDINGS = [("escape", "quit", "Cerrar"), ("q", "quit", "Cerrar")]
     CSS = """
     VentanaDiff { align: center middle; background: rgba(0,0,0,0.6); }
     #dialog_diff { padding: 1 2; background: #121212; border: heavy #00afff; width: 80%; height: 80%; }
-    TextArea { background: #1a1a1a; border: tall #333; }
+    #diff_container { height: 1fr; }
+    Static { background: #1a1a1a; padding: 1; }
     """
     def __init__(self, path: str, diff: str): super().__init__(); self.path = path; self.diff = diff
     def compose(self) -> ComposeResult:
         yield Vertical(
             Label(f"[bold #00afff]Diff: {self.path}[/]"),
-            TextArea(self.diff, read_only=True, show_line_numbers=True),
+            ScrollableContainer(Static(_diff_coloreado(self.diff), markup=True), id="diff_container"),
             Label("[dim][Q / ESC] Cerrar[/dim]"),
             id="dialog_diff"
         )
@@ -155,13 +174,16 @@ class VentanaDetalleCommit(ModalScreen):
     CSS = """
     VentanaDetalleCommit { align: center middle; background: rgba(0,0,0,0.6); }
     #dialog_detail { padding: 1 2; background: #121212; border: heavy #00afff; width: 80%; height: 80%; }
-    TextArea { background: #1a1a1a; border: tall #333; }
+    #detail_container { height: 1fr; }
+    #meta_label { padding: 0 1; height: auto; }
+    Static { background: #1a1a1a; padding: 1; }
     """
-    def __init__(self, sha: str, detail: str): super().__init__(); self.sha = sha; self.detail = detail
+    def __init__(self, sha: str, meta: str, diff: str): super().__init__(); self.sha = sha; self.meta = meta; self.diff = diff
     def compose(self) -> ComposeResult:
         yield Vertical(
             Label(f"[bold #00afff]Commit: {self.sha}[/]"),
-            TextArea(self.detail, read_only=True, show_line_numbers=True),
+            Label(self.meta, id="meta_label"),
+            ScrollableContainer(Static(_diff_coloreado(self.diff), markup=True), id="detail_container"),
             Label("[dim][Q / ESC] Cerrar[/dim]"),
             id="dialog_detail"
         )
@@ -301,10 +323,13 @@ class GitCriolloApp(App):
     .panel-status { height: auto; }
     .panel-history { height: 1fr; }
     ListView { background: #1a1a1a; margin: 1; border: tall #444; }
+    ListView:focus { border: tall #00afff; }
     #lista_ramas { height: 1fr; }
+    #lista_ramas:focus { border: tall #00afd7; }
     #lista_staged { height: auto; max-height: 8; margin: 0 0 0 1; border: solid #333; }
     #lista_unstaged { height: auto; max-height: 8; margin: 0 0 0 1; border: solid #333; }
     #lista_commits { height: 1fr; margin: 1; border: solid #333; }
+    #lista_commits:focus { border: tall #ffaf00; }
     ListItem { padding: 0 1; }
     ListItem.--highlight { background: #005f87; }
     Label { margin: 1 0 0 2; }
@@ -760,8 +785,8 @@ class GitCriolloApp(App):
     def _mostrar_detalle_commit(self, sha: str) -> None:
         try:
             detail = self.git.get_commit_detail(sha)
-            texto = f"Commit: {detail.hash}\nAutor: {detail.author}\nFecha: {detail.date}\n\n{detail.message}\n\n---\n{detail.diff}"
-            self.push_screen(VentanaDetalleCommit(sha, texto))
+            meta = f"[bold]Autor:[/] {detail.author}    [bold]Fecha:[/] {detail.date}\n\n{detail.message}"
+            self.push_screen(VentanaDetalleCommit(sha, meta, detail.diff))
         except Exception as e:
             self._notify_error(e)
 
