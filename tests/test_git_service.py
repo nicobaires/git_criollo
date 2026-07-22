@@ -4,7 +4,7 @@ import subprocess
 import pytest
 from git import GitCommandError
 
-from git_criollo.git_service import ConflictRegion, DiffHunk
+from git_criollo.models import ConflictRegion, DiffHunk
 
 
 class TestGetBranches:

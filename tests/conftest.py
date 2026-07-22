@@ -7,13 +7,9 @@ from collections.abc import Generator
 import pytest
 from git import Repo
 
-from git_criollo.git_service import (
-    GitService,
-    BranchInfo,
-    CommitInfo,
-    StatusInfo,
-    DiffHunk,
-    ConflictRegion,
+from git_criollo.git_service import GitService
+from git_criollo.models import (
+    BranchInfo, CommitInfo, StatusInfo, DiffHunk, ConflictRegion,
 )
 
 
