@@ -250,11 +250,11 @@ class GitCriolloApp(
         item = event.item
         if not item:
             return
-        ruta = getattr(item, "archivo_ruta", None)
-        if not ruta:
-            return
 
         if lista_id == "lista_staged":
+            ruta = getattr(item, "archivo_ruta", None)
+            if not ruta:
+                return
             try:
                 self.git.unstage_file(ruta)
                 self.notify(f"Unstage: {ruta}")
@@ -263,6 +263,9 @@ class GitCriolloApp(
                 self._notify_error(e)
 
         elif lista_id == "lista_unstaged":
+            ruta = getattr(item, "archivo_ruta", None)
+            if not ruta:
+                return
             try:
                 self.git.stage_file(ruta)
                 self.notify(f"Stage: {ruta}")
