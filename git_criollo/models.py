@@ -23,8 +23,11 @@ class CommitInfo:
 class CommitDetail:
     hash: str
     author: str
-    date: str
+    author_date: str
+    committer: str
+    committer_date: str
     message: str
+    files: list[tuple[str, int, int]]
     diff: str
 
 

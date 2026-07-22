@@ -72,8 +72,11 @@ class TestGetCommitDetail:
         detail = gs.get_commit_detail(commits[0].hash)
         assert detail.hash == commits[0].hash
         assert detail.author
-        assert detail.date
+        assert detail.author_date
+        assert detail.committer
+        assert detail.committer_date
         assert detail.message
+        assert isinstance(detail.files, list)
 
 
 class TestGetStatus:

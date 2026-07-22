@@ -1,9 +1,10 @@
 from textual.app import ComposeResult
 from textual.widgets import Label, Static, TextArea
-from textual.containers import Vertical, ScrollableContainer
+from textual.containers import Vertical, Horizontal, ScrollableContainer
 from textual.screen import ModalScreen
 
 from git_criollo.diff_utils import _diff_coloreado
+from git_criollo.models import CommitDetail
 
 
 class VentanaDiff(ModalScreen):
@@ -29,17 +30,38 @@ class VentanaDetalleCommit(ModalScreen):
     BINDINGS = [("escape", "quit", "Cerrar"), ("q", "quit", "Cerrar")]
     CSS = """
     VentanaDetalleCommit { align: center middle; background: rgba(0,0,0,0.6); }
-    #dialog_detail { padding: 1 2; background: #121212; border: heavy #00afff; width: 80%; height: 80%; }
+    #dialog_detail { padding: 1 2; background: #121212; border: heavy #00afff; width: 85%; height: 85%; }
+    #meta_section { height: auto; padding: 0 0 1 0; border-bottom: solid #333; }
+    #meta_section Label { margin: 0; }
+    #message_label { margin: 1 0; height: auto; }
+    #files_section { height: auto; max-height: 6; margin: 0 0 1 0; padding: 0 1; border-bottom: solid #333; }
     #detail_container { height: 1fr; }
-    #meta_label { padding: 0 1; height: auto; }
     Static { background: #1a1a1a; padding: 1; }
+    .file_line { margin: 0; color: #aaa; }
+    .add { color: #00ff00; }
+    .del { color: #ff5f5f; }
     """
-    def __init__(self, sha: str, meta: str, diff: str): super().__init__(); self.sha = sha; self.meta = meta; self.diff = diff
+    def __init__(self, detail: CommitDetail): super().__init__(); self.detail = detail
+
     def compose(self) -> ComposeResult:
+        detail = self.detail
+        lines = "".join(
+            f"  {path}  [+{a} -{d}]\n"
+            for path, a, d in detail.files
+        )
         yield Vertical(
-            Label(f"[bold #00afff]Commit: {self.sha}[/]"),
-            Label(self.meta, id="meta_label"),
-            ScrollableContainer(Static(_diff_coloreado(self.diff), markup=True), id="detail_container"),
+            Label(f"[bold #00afff]Commit: {detail.hash}[/]"),
+            Vertical(
+                Label(f"Autor:    {detail.author}"),
+                Label(f"Fecha:    {detail.author_date}"),
+                Label(f"Committer: {detail.committer}"),
+                Label(f"Fecha:    {detail.committer_date}"),
+                id="meta_section",
+            ),
+            Label(detail.message, id="message_label"),
+            Label(f"[bold]Archivos ({len(detail.files)})[/]"),
+            Label(lines, id="files_section"),
+            ScrollableContainer(Static(_diff_coloreado(detail.diff), markup=True), id="detail_container"),
             Label("[dim][Q / ESC] Cerrar[/dim]"),
             id="dialog_detail"
         )

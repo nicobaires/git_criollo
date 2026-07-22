@@ -46,8 +46,7 @@ class MixinHistoryActions:
     def _mostrar_detalle_commit(self, sha: str) -> None:
         try:
             detail = self.git.get_commit_detail(sha)
-            meta = f"[bold]Autor:[/] {detail.author}    [bold]Fecha:[/] {detail.date}\n\n{detail.message}"
-            self.push_screen(VentanaDetalleCommit(sha, meta, detail.diff))
+            self.push_screen(VentanaDetalleCommit(detail))
         except (GitCommandError, RuntimeError) as e:
             self._notify_error(e)
 

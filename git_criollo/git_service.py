@@ -92,12 +92,20 @@ class GitService:
 
     def get_commit_detail(self, sha: str) -> CommitDetail:
         commit = self.repo.commit(sha)
-        diff = self.repo.git.show(sha, "--stat", "--format=fuller")
+        diff = self.repo.git.show(sha, "--format=fuller")
+        stats = commit.stats.files
+        files = sorted(
+            (path, s["insertions"], s["deletions"])
+            for path, s in stats.items()
+        )
         return CommitDetail(
             hash=sha[:7],
             author=f"{commit.author.name} <{commit.author.email}>",
-            date=commit.committed_datetime.strftime("%Y-%m-%d %H:%M:%S"),
+            author_date=commit.authored_datetime.strftime("%Y-%m-%d %H:%M"),
+            committer=f"{commit.committer.name} <{commit.committer.email}>",
+            committer_date=commit.committed_datetime.strftime("%Y-%m-%d %H:%M"),
             message=commit.message.strip(),
+            files=files,
             diff=diff,
         )
 
