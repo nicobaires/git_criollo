@@ -25,10 +25,11 @@ from git_criollo.ventanas import (
     VentanaComando,
     VentanaResultado,
     VentanaUncommitted,
+    VentanaRebase,
+    VentanaConflictos,
 )
 
 
-# --- APLICACIÓN PRINCIPAL ---
 class GitCriolloApp(App):
     BINDINGS = [
         ("q", "quit", "Salir"),
@@ -90,8 +91,10 @@ class GitCriolloApp(App):
             self._commit_offset = 0
             self._modo_grafico = False
             self.actualizar_pantalla_completa()
-        except Exception:
-            self.exit(message="Error: No estás dentro de un repositorio de Git.")
+        except (GitCommandError, RuntimeError) as e:
+            self.exit(message=f"Error: No estás dentro de un repositorio de Git. ({e})")
+        except Exception as e:
+            self.exit(message=f"Error inesperado al iniciar: {e}")
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True, id="header")
@@ -132,8 +135,10 @@ class GitCriolloApp(App):
             self.actualizar_historial()
             self.actualizar_status()
             self.actualizar_header()
+        except (GitCommandError, RuntimeError) as e:
+            self.notify(f"Error de Git: {e}", severity="error")
         except Exception as e:
-            self.notify(f"Error al actualizar pantalla: {e}", severity="error")
+            self.notify(f"Error inesperado al actualizar pantalla: {e}", severity="error")
 
     def actualizar_header(self) -> None:
         try:
@@ -145,7 +150,9 @@ class GitCriolloApp(App):
             b = info.behind.get(info.active, 0)
             sufijo = f" [+{a} -{b}]" if a or b else ""
             self.sub_title = f"{info.active}{sufijo}"
-        except Exception:
+        except (GitCommandError, RuntimeError) as e:
+            self.sub_title = f"[error] {e}"
+        except Exception as e:
             self.sub_title = ""
 
     def actualizar_ramas(self) -> None:
@@ -263,6 +270,8 @@ class GitCriolloApp(App):
         self.query_one(f"#{order[idx]}", ListView).focus()
 
     def _notify_error(self, e: Exception) -> None:
+        if isinstance(e, (KeyboardInterrupt, SystemExit)):
+            raise
         _notify_error_base(self.notify, e, timeout=15)
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
@@ -279,7 +288,7 @@ class GitCriolloApp(App):
                 self.git.unstage_file(ruta)
                 self.notify(f"Unstage: {ruta}")
                 self.actualizar_status()
-            except Exception as e:
+            except (GitCommandError, RuntimeError) as e:
                 self._notify_error(e)
 
         elif lista_id == "lista_unstaged":
@@ -287,7 +296,7 @@ class GitCriolloApp(App):
                 self.git.stage_file(ruta)
                 self.notify(f"Stage: {ruta}")
                 self.actualizar_status()
-            except Exception as e:
+            except (GitCommandError, RuntimeError) as e:
                 self._notify_error(e)
 
         elif lista_id == "lista_commits":
@@ -317,7 +326,7 @@ class GitCriolloApp(App):
                     self.git.create_branch(n)
                     self.notify(f"Rama '{n}' creada.")
                     self.actualizar_ramas()
-                except Exception as e:
+                except (GitCommandError, RuntimeError) as e:
                     self._notify_error(e)
         self.push_screen(VentanaNuevaRama(), p)
 
@@ -338,7 +347,7 @@ class GitCriolloApp(App):
                 self.git.checkout(r)
                 self.notify(f"Checkout: {r}")
             self.actualizar_pantalla_completa()
-        except Exception as e:
+        except (GitCommandError, RuntimeError) as e:
             self._notify_error(e)
 
     def action_eliminar_rama(self) -> None:
@@ -366,7 +375,7 @@ class GitCriolloApp(App):
                     self.git.delete_branch(r)
                     self.notify(f"Borrada: {r}")
                     self.actualizar_pantalla_completa()
-                except Exception as e:
+                except (GitCommandError, RuntimeError) as e:
                     self._notify_error(e)
         if r:
             self.push_screen(VentanaConfirmarBorrado(r), p)
@@ -391,7 +400,7 @@ class GitCriolloApp(App):
                     self.git.merge(r)
                     self.notify(f"Merged {r} en {info.active}")
                     self.actualizar_pantalla_completa()
-                except Exception as e:
+                except (GitCommandError, RuntimeError) as e:
                     self._notify_error(e)
         self.push_screen(VentanaConfirmarMerge(r), p)
 
@@ -401,7 +410,7 @@ class GitCriolloApp(App):
             self.git.pull()
             self.notify("¡Pull OK!")
             self.actualizar_pantalla_completa()
-        except Exception as e:
+        except (GitCommandError, RuntimeError) as e:
             self._notify_error(e)
 
     def action_push_rama(self) -> None:
@@ -411,7 +420,7 @@ class GitCriolloApp(App):
             self.git.push(active_branch)
             self.notify("¡Push OK!")
             self.actualizar_pantalla_completa()
-        except Exception as e:
+        except (GitCommandError, RuntimeError) as e:
             self._notify_error(e)
 
     def action_fetch_rama(self) -> None:
@@ -420,7 +429,7 @@ class GitCriolloApp(App):
             self.git.fetch()
             self.notify("¡Fetch OK!")
             self.actualizar_pantalla_completa()
-        except Exception as e:
+        except (GitCommandError, RuntimeError) as e:
             self._notify_error(e)
 
     def action_stage_all(self) -> None:
@@ -428,7 +437,7 @@ class GitCriolloApp(App):
             self.git.stage_all()
             self.notify("Todos los cambios agregados al Stage.")
             self.actualizar_status()
-        except Exception as e:
+        except (GitCommandError, RuntimeError) as e:
             self._notify_error(e)
 
     def action_commit_cambios(self) -> None:
@@ -443,7 +452,7 @@ class GitCriolloApp(App):
                     self.git.commit(mensaje)
                     self.notify("¡Commit creado con éxito!")
                     self.actualizar_pantalla_completa()
-                except Exception as e:
+                except (GitCommandError, RuntimeError) as e:
                     self._notify_error(e)
 
         self.push_screen(VentanaCommit(), guardar_commit)
@@ -456,7 +465,7 @@ class GitCriolloApp(App):
                 self.git.stash_push(val)
                 self.notify("Stash guardado.")
                 self.actualizar_status()
-            except Exception as e:
+            except (GitCommandError, RuntimeError) as e:
                 self._notify_error(e)
         self.push_screen(VentanaStashPush(), p)
 
@@ -465,7 +474,7 @@ class GitCriolloApp(App):
             self.git.stash_pop()
             self.notify("Stash recuperado.")
             self.actualizar_status()
-        except Exception as e:
+        except (GitCommandError, RuntimeError) as e:
             self._notify_error(e)
 
     def action_ver_diff(self) -> None:
@@ -522,7 +531,7 @@ class GitCriolloApp(App):
             detail = self.git.get_commit_detail(sha)
             meta = f"[bold]Autor:[/] {detail.author}    [bold]Fecha:[/] {detail.date}\n\n{detail.message}"
             self.push_screen(VentanaDetalleCommit(sha, meta, detail.diff))
-        except Exception as e:
+        except (GitCommandError, RuntimeError) as e:
             self._notify_error(e)
 
     def _borrar_tag_si_confirmado(self, b: bool | None, tag_name: str) -> None:
@@ -531,7 +540,7 @@ class GitCriolloApp(App):
                 self.git.delete_tag(tag_name)
                 self.notify(f"Tag '{tag_name}' borrado.")
                 self.actualizar_ramas()
-            except Exception as e:
+            except (GitCommandError, RuntimeError) as e:
                 self._notify_error(e)
 
     def action_amend_commit(self) -> None:
@@ -546,7 +555,7 @@ class GitCriolloApp(App):
                     self.git.amend_commit(mensaje)
                     self.notify("Commit modificado (amend).")
                     self.actualizar_pantalla_completa()
-                except Exception as e:
+                except (GitCommandError, RuntimeError) as e:
                     self._notify_error(e)
 
         self.push_screen(VentanaAmend(), p)
@@ -558,7 +567,7 @@ class GitCriolloApp(App):
                     self.git.create_tag(nombre)
                     self.notify(f"Tag '{nombre}' creado.")
                     self.actualizar_ramas()
-                except Exception as e:
+                except (GitCommandError, RuntimeError) as e:
                     self._notify_error(e)
 
         self.push_screen(VentanaTag(), p)
@@ -578,7 +587,7 @@ class GitCriolloApp(App):
                     self.git.cherry_pick(sha)
                     self.notify(f"Cherry-pick de {sha} aplicado.")
                     self.actualizar_pantalla_completa()
-                except Exception as e:
+                except (GitCommandError, RuntimeError) as e:
                     self._notify_error(e)
 
         self.push_screen(VentanaCherryPick(), p)
@@ -589,7 +598,7 @@ class GitCriolloApp(App):
                 try:
                     resultado = self.git.run_command(cmd)
                     self.push_screen(VentanaResultado(f"Resultado: git {cmd}", resultado))
-                except Exception as e:
+                except (GitCommandError, RuntimeError) as e:
                     self._notify_error(e)
 
         self.push_screen(VentanaComando(), p)
@@ -598,7 +607,7 @@ class GitCriolloApp(App):
         try:
             contenido = self.git.get_gitignore_content()
             self.push_screen(VentanaResultado(".gitignore", contenido))
-        except Exception as e:
+        except (GitCommandError, RuntimeError) as e:
             self._notify_error(e)
 
     def action_agregar_gitignore(self) -> None:
@@ -620,7 +629,7 @@ class GitCriolloApp(App):
             self.git.add_to_gitignore(ruta)
             self.notify(f"Ignorado: {ruta}")
             self.actualizar_status()
-        except Exception as e:
+        except (GitCommandError, RuntimeError) as e:
             self._notify_error(e)
 
     def action_stage_hunk(self) -> None:
@@ -650,7 +659,6 @@ class GitCriolloApp(App):
         if not sha:
             self.notify("Seleccioná un commit en el historial.", severity="warning")
             return
-        from git_criollo.ventanas import VentanaRebase
         commits = self.git.get_commits_for_rebase(sha)
         if len(commits) < 2:
             self.notify("Se necesitan al menos 2 commits para rebase interactivo.", severity="warning")
@@ -662,7 +670,7 @@ class GitCriolloApp(App):
                     self.git.run_rebase(base_sha, todos)
                     self.notify("Rebase completado.")
                     self.actualizar_pantalla_completa()
-                except Exception as e:
+                except (GitCommandError, RuntimeError) as e:
                     self._notify_error(e)
         self.push_screen(VentanaRebase(commits), ejecutar)
 
@@ -670,7 +678,6 @@ class GitCriolloApp(App):
         if not self.git.is_merge_in_progress():
             self.notify("No hay conflictos de merge.", severity="warning")
             return
-        from git_criollo.ventanas import VentanaConflictos
         archivos = self.git.get_conflicted_files()
         if not archivos:
             self.notify("No hay archivos en conflicto.", severity="warning")

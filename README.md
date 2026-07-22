@@ -23,6 +23,21 @@ gitcriollo
 uv add gitpython textual
 ```
 
+### Correcciones incluidas
+
+La rama `fix/bugs-lote1` aplica 8 grupos de correcciones sobre el código base:
+
+- **HEAD detached**: muestra SHA corto en vez de asumir `"master"`
+- **Cross-platform**: `os.devnull` en vez de `/dev/null` (funciona en Windows)
+- **`checkout_remote`**: `rsplit` en vez de `split` para refs anidadas (`origin/feature/x`)
+- **pull/push/fetch**: sin fallback silencioso a `origin`, error descriptivo si no hay remote configurado
+- **`run_command`**: `shlex.split` + validación anti-inyección + lista de args a `execute()`
+- **`stage_hunk`**: manejo específico de `GitCommandError` → `RuntimeError`, cleanup en `finally`
+- **Logging**: reemplazados todos los `except Exception: pass` con `logging.warning/exception`
+- **Excepciones específicas**: `GitCommandError`, `BadName`, `InvalidGitRepositoryError` en vez de `Exception` genérico
+- **Markup Rich escapado**: `]`, `{`, `}` además de `[` en diffs coloreados
+- **`KeyboardInterrupt`/`SystemExit`**: no se tragan más (Ctrl+C realmente sale)
+
 ## Uso
 
 ```bash

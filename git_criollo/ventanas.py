@@ -8,7 +8,6 @@ from git_criollo.diff_utils import _diff_coloreado
 from git_criollo.error_utils import notify_error as _error_base
 
 
-# --- MODAL: CREAR NUEVA RAMA ---
 class VentanaNuevaRama(ModalScreen[str]):
     BINDINGS = [("escape", "quit", "Cancelar")]
     CSS = """
@@ -28,7 +27,6 @@ class VentanaNuevaRama(ModalScreen[str]):
     def action_quit(self) -> None: self.dismiss("")
 
 
-# --- MODAL: CONFIRMAR BORRADO ---
 class VentanaConfirmarBorrado(ModalScreen[bool]):
     BINDINGS = [("escape", "cancel", "Cancelar")]
     CSS = """
@@ -49,7 +47,6 @@ class VentanaConfirmarBorrado(ModalScreen[bool]):
     def action_cancel(self) -> None: self.dismiss(False)
 
 
-# --- MODAL: CONFIRMAR MERGE ---
 class VentanaConfirmarMerge(ModalScreen[bool]):
     BINDINGS = [("escape", "cancel", "Cancelar")]
     CSS = """
@@ -70,7 +67,6 @@ class VentanaConfirmarMerge(ModalScreen[bool]):
     def action_cancel(self) -> None: self.dismiss(False)
 
 
-# --- MODAL: ESCRIBIR MENSAJE DE COMMIT ---
 class VentanaCommit(ModalScreen[str]):
     BINDINGS = [("escape", "quit", "Cancelar")]
     CSS = """
@@ -90,7 +86,6 @@ class VentanaCommit(ModalScreen[str]):
     def action_quit(self) -> None: self.dismiss("")
 
 
-# --- MODAL: STASH PUSH ---
 class VentanaStashPush(ModalScreen):
     BINDINGS = [("escape", "quit", "Cancelar")]
     CSS = """
@@ -110,7 +105,6 @@ class VentanaStashPush(ModalScreen):
     def action_quit(self) -> None: self.dismiss(None)
 
 
-# --- MODAL: VER DIFF ---
 class VentanaDiff(ModalScreen):
     BINDINGS = [("escape", "quit", "Cerrar"), ("q", "quit", "Cerrar")]
     CSS = """
@@ -130,7 +124,6 @@ class VentanaDiff(ModalScreen):
     def action_quit(self) -> None: self.dismiss()
 
 
-# --- MODAL: AMEND COMMIT ---
 class VentanaAmend(ModalScreen[str]):
     BINDINGS = [("escape", "quit", "Cancelar")]
     CSS = """
@@ -150,7 +143,6 @@ class VentanaAmend(ModalScreen[str]):
     def action_quit(self) -> None: self.dismiss("")
 
 
-# --- MODAL: DETALLE DE COMMIT ---
 class VentanaDetalleCommit(ModalScreen):
     BINDINGS = [("escape", "quit", "Cerrar"), ("q", "quit", "Cerrar")]
     CSS = """
@@ -172,7 +164,6 @@ class VentanaDetalleCommit(ModalScreen):
     def action_quit(self) -> None: self.dismiss()
 
 
-# --- MODAL: CREAR TAG ---
 class VentanaTag(ModalScreen[str]):
     BINDINGS = [("escape", "quit", "Cancelar")]
     CSS = """
@@ -192,7 +183,6 @@ class VentanaTag(ModalScreen[str]):
     def action_quit(self) -> None: self.dismiss("")
 
 
-# --- MODAL: CONFIRMAR BORRADO TAG ---
 class VentanaConfirmarBorradoTag(ModalScreen[bool]):
     BINDINGS = [("escape", "cancel", "Cancelar")]
     CSS = """
@@ -213,7 +203,6 @@ class VentanaConfirmarBorradoTag(ModalScreen[bool]):
     def action_cancel(self) -> None: self.dismiss(False)
 
 
-# --- MODAL: CHERRY-PICK ---
 class VentanaCherryPick(ModalScreen[str]):
     BINDINGS = [("escape", "quit", "Cancelar")]
     CSS = """
@@ -233,7 +222,6 @@ class VentanaCherryPick(ModalScreen[str]):
     def action_quit(self) -> None: self.dismiss("")
 
 
-# --- MODAL: COMANDO PERSONALIZADO ---
 class VentanaComando(ModalScreen[str]):
     BINDINGS = [("escape", "quit", "Cancelar")]
     CSS = """
@@ -253,7 +241,6 @@ class VentanaComando(ModalScreen[str]):
     def action_quit(self) -> None: self.dismiss("")
 
 
-# --- MODAL: RESULTADO DE COMANDO ---
 class VentanaResultado(ModalScreen):
     BINDINGS = [("escape", "quit", "Cerrar"), ("q", "quit", "Cerrar")]
     CSS = """
@@ -272,7 +259,6 @@ class VentanaResultado(ModalScreen):
     def action_quit(self) -> None: self.dismiss()
 
 
-# --- MODAL: STAGE HUNK (INTERACTIVE STAGING) ---
 class VentanaStageHunk(ModalScreen[bool]):
     BINDINGS = [
         ("escape", "quit", "Cancelar"),
@@ -332,9 +318,10 @@ class VentanaStageHunk(ModalScreen[bool]):
             return
         try:
             self.git.stage_hunk(self.path, self._hunks[self._idx])
-            # Re-parse hunks after staging
             self._hunks = self.git.parse_diff_hunks(self.path)
             self._mostrar_hunk()
+        except (GitCommandError, RuntimeError) as e:
+            self._notify_error(e)
         except Exception as e:
             self._notify_error(e)
 
@@ -343,13 +330,14 @@ class VentanaStageHunk(ModalScreen[bool]):
         self._mostrar_hunk()
 
     def _notify_error(self, e: Exception) -> None:
+        if isinstance(e, (KeyboardInterrupt, SystemExit)):
+            raise
         _error_base(self.notify, e, timeout=10)
 
     def action_quit(self) -> None:
         self.dismiss(True)
 
 
-# --- MODAL: INTERACTIVE REBASE ---
 class VentanaRebase(ModalScreen[list[tuple[str, str]] | None]):
     BINDINGS = [
         ("escape", "quit", "Cancelar"),
@@ -431,7 +419,6 @@ class VentanaRebase(ModalScreen[list[tuple[str, str]] | None]):
         self.dismiss(None)
 
 
-# --- MODAL: CONFLICTOS DE MERGE ---
 class VentanaConflictos(ModalScreen[bool]):
     BINDINGS = [
         ("escape", "quit", "Cerrar"),
@@ -506,6 +493,9 @@ class VentanaConflictos(ModalScreen[bool]):
         region = self._regiones[self._idx_region]
         try:
             self.git.resolve_conflict_region(path, region, choice)
+        except (GitCommandError, RuntimeError) as e:
+            self._notify_error(e)
+            return
         except Exception as e:
             self._notify_error(e)
             return
@@ -513,8 +503,8 @@ class VentanaConflictos(ModalScreen[bool]):
         if self._idx_region >= len(self._regiones):
             try:
                 self.git.stage_file(path)
-            except Exception:
-                pass
+            except (GitCommandError, RuntimeError) as e:
+                self._notify_error(e)
             self._idx_archivo += 1
             self._cargar_siguiente_archivo()
         else:
@@ -528,13 +518,14 @@ class VentanaConflictos(ModalScreen[bool]):
         self._resolver_y_avanzar("both")
 
     def _notify_error(self, e: Exception) -> None:
+        if isinstance(e, (KeyboardInterrupt, SystemExit)):
+            raise
         _error_base(self.notify, e, timeout=10)
 
     def action_quit(self) -> None:
         self.dismiss(False)
 
 
-# --- MODAL: CAMBIOS SIN COMMIT ---
 class VentanaUncommitted(ModalScreen):
     BINDINGS = [
         ("escape", "quit", "Cerrar"),
@@ -667,7 +658,7 @@ class VentanaUncommitted(ModalScreen):
             else:
                 self.git.stage_file(ruta)
             self._refrescar()
-        except Exception as e:
+        except (GitCommandError, RuntimeError) as e:
             self._notify_error(e)
 
     def action_ver_diff(self) -> None:
@@ -687,7 +678,7 @@ class VentanaUncommitted(ModalScreen):
         try:
             self.git.stage_all()
             self._refrescar()
-        except Exception as e:
+        except (GitCommandError, RuntimeError) as e:
             self._notify_error(e)
 
     def action_commit_cambios(self) -> None:
@@ -701,12 +692,14 @@ class VentanaUncommitted(ModalScreen):
                 try:
                     self.git.commit(mensaje)
                     self._refrescar()
-                except Exception as e:
+                except (GitCommandError, RuntimeError) as e:
                     self._notify_error(e)
 
         self.app.push_screen(VentanaCommit(), guardar)
 
     def _notify_error(self, e: Exception) -> None:
+        if isinstance(e, (KeyboardInterrupt, SystemExit)):
+            raise
         _error_base(self.notify, e, timeout=10)
 
     def action_stage_hunk(self) -> None:
@@ -743,7 +736,7 @@ class VentanaUncommitted(ModalScreen):
             self.git.add_to_gitignore(ruta)
             self.notify(f"Ignorado: {ruta}")
             self._refrescar()
-        except Exception as e:
+        except (GitCommandError, RuntimeError) as e:
             self._notify_error(e)
 
     def action_quit(self) -> None:
