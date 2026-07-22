@@ -114,24 +114,39 @@ Presioná `?` dentro de la aplicación para ver la ayuda completa.
 
 ```
 git_criollo/
-├── __init__.py          # package marker
-├── __main__.py          # entry point (python -m git_criollo)
-├── ayuda.py             # pantalla de ayuda (VentanaAyuda)
-├── diff_utils.py        # formateo de diff con word-diff coloreado
-├── error_utils.py       # función notify_error() compartida
-├── git_service.py       # lógica Git (dataclasses + GitService)
-├── ui.py                # App principal (GitCriolloApp)
-└── ventanas.py          # todos los ModalScreen
+├── __init__.py              # package marker
+├── __main__.py              # entry point (python -m git_criollo)
+├── models.py                # dataclasses: BranchInfo, CommitInfo, etc.
+├── git_service.py           # lógica Git (GitService) — sin Textual
+├── diff_utils.py            # formateo de diff con word-diff coloreado
+├── error_utils.py           # función notify_error() compartida
+├── styles.py                # CSS de la app principal
+├── ayuda.py                 # pantalla de ayuda (VentanaAyuda)
+├── ui.py                    # App principal (~300 lines)
+├── ui_actions_branches.py   # mixin: branch/tag actions
+├── ui_actions_sync.py       # mixin: pull/push/fetch actions
+├── ui_actions_changes.py    # mixin: stage/commit/stash/diff actions
+├── ui_actions_history.py    # mixin: log/rebase/cherry-pick actions
+├── ventanas/
+│   ├── __init__.py          # re-exports todas las ventanas
+│   ├── input.py             # 7 input dialogs
+│   ├── confirm.py           # 3 confirmation dialogs
+│   ├── viewer.py            # 3 viewer dialogs
+│   ├── interactive.py       # StageHunk, Rebase, Conflictos
+│   └── uncommitted.py       # VentanaUncommitted
 tests/
-├── conftest.py          # fixtures: repo temporal con branches/tags/detached
-├── test_diff_utils.py   # _diff_coloreado: escapes, word-diff, colores
-├── test_error_utils.py  # notify_error: GitCommandError, merge conflict, RuntimeError
-└── test_git_service.py  # 52 tests: todas las operaciones Git
+├── conftest.py              # fixtures: repo temporal
+├── test_diff_utils.py       # _diff_coloreado
+├── test_error_utils.py      # notify_error
+└── test_git_service.py      # 52 tests: todas las operaciones Git
 ```
 
-- `git_service.py` — cero imports de Textual, solo `GitPython` y `dataclasses`. Devuelve objetos planos (`BranchInfo`, `CommitInfo`, `CommitDetail`, `StatusInfo`, `DiffHunk`, `ConflictRegion`). Testeable sin terminal.
+- `models.py` — dataclasses puras (`BranchInfo`, `CommitInfo`, `CommitDetail`, `DiffHunk`, `ConflictRegion`, `StatusInfo`). Sin dependencias.
+- `git_service.py` — cero imports de Textual. `GitService` usa modelos de `models.py`. Testeable sin terminal.
 - `diff_utils.py` — función `_diff_coloreado()` pura, sin imports de Textual.
-- `error_utils.py` — función `notify_error()` compartida entre `ui.py` y `ventanas.py`.
-- `ventanas.py` — todos los `ModalScreen` (input, confirmación, diff, detalle, stage hunk, rebase, conflictos, cambios sin commit, etc.). Usa Textual pero no `GitPython`.
-- `ui.py` — cero imports de `GitPython`. Solo `GitCriolloApp` que delega en `GitService` y monta las ventanas de `ventanas.py`.
-- `ayuda.py` — define la ventana modal de ayuda con todos los atajos y descripciones.
+- `error_utils.py` — función `notify_error()` compartida entre `ui.py` y `ventanas/`.
+- `styles.py` — CSS de la app principal.
+- `ui.py` — `GitCriolloApp` hereda de 4 mixins + `App`. Cero imports de `GitPython`.
+- `ui_actions_*.py` — mixins de acciones por dominio (ramas, sync, cambios, historial).
+- `ventanas/` — 5 archivos con `ModalScreen` agrupados por tipo.
+- `ayuda.py` — ventana modal de ayuda con todos los atajos.
