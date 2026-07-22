@@ -23,6 +23,14 @@ gitcriollo
 uv add gitpython textual
 ```
 
+### Tests
+
+```bash
+uv run pytest tests/
+```
+
+72 tests que cubren toda la capa de servicio (`git_service.py`), formateo de diffs (`diff_utils.py`) y manejo de errores (`error_utils.py`). Usan repositorios temporales creados con `tmpdir` + `git init`, sin depender de fixtures externos.
+
 ### Correcciones incluidas
 
 La rama `fix/bugs-lote1` aplica 8 grupos de correcciones sobre el código base:
@@ -71,6 +79,7 @@ Presioná `?` dentro de la aplicación para ver la ayuda completa.
 | `Tab` | Ciclo foco | Navegar entre paneles |
 | `i` | Ver .gitignore | Mostrar el contenido del .gitignore |
 | `I` | Ignorar archivo | Agregar el untracked seleccionado al .gitignore |
+| `x` | Descartar cambios | Descartar cambios locales del archivo seleccionado |
 | | **Stash** | |
 | `z` | Stash Push | Guardar cambios en el stash |
 | `Z` | Stash Pop | Recuperar el último stash |
@@ -113,6 +122,11 @@ git_criollo/
 ├── git_service.py       # lógica Git (dataclasses + GitService)
 ├── ui.py                # App principal (GitCriolloApp)
 └── ventanas.py          # todos los ModalScreen
+tests/
+├── conftest.py          # fixtures: repo temporal con branches/tags/detached
+├── test_diff_utils.py   # _diff_coloreado: escapes, word-diff, colores
+├── test_error_utils.py  # notify_error: GitCommandError, merge conflict, RuntimeError
+└── test_git_service.py  # 52 tests: todas las operaciones Git
 ```
 
 - `git_service.py` — cero imports de Textual, solo `GitPython` y `dataclasses`. Devuelve objetos planos (`BranchInfo`, `CommitInfo`, `CommitDetail`, `StatusInfo`, `DiffHunk`, `ConflictRegion`). Testeable sin terminal.

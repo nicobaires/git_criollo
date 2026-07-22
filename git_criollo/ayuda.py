@@ -26,6 +26,7 @@ SECCIONES = [
         ("Tab", "Ciclo foco:", "Navegar entre Ramas → Staged → Unstaged → Historial."),
         ("i", "Ver .gitignore:", "Abrir el archivo .gitignore en un modal de lectura."),
         ("I", "Ignorar archivo:", "Agregar el archivo no trackeado seleccionado al .gitignore."),
+        ("x", "Descartar cambios:", "Descartar cambios locales del archivo seleccionado (git checkout --)."),
     ]),
     ("CONFLICTOS", [
         ("M", "Resolver conflictos:", "Abrir resolución de conflictos de merge (ours/theirs/both)."),

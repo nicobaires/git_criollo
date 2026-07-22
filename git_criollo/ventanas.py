@@ -534,6 +534,7 @@ class VentanaUncommitted(ModalScreen):
         ("a", "stage_all", "Stage All"),
         ("w", "commit_cambios", "Commit"),
         ("p", "stage_hunk", "Stage Hunk"),
+        ("x", "descartar_cambios", "Descartar"),
         ("i", "agregar_gitignore", "Ignore"),
     ]
     CSS = """
@@ -557,7 +558,7 @@ class VentanaUncommitted(ModalScreen):
                 Vertical(
                     Label("[bold]Archivos[/] (Enter: stage/unstage)", id="uc_title"),
                     ListView(id="uc_file_list"),
-                    Label("[dim][[a]] Stage All  [[w]] Commit  [[v]] Ver Diff  [[p]] Hunk  [[i]] Ignore  [[q]] Cerrar[/dim]", id="uc_actions"),
+                    Label("[dim][[a]] Stage All  [[w]] Commit  [[v]] Ver Diff  [[p]] Hunk  [[x]] Descartar  [[i]] Ignore  [[q]] Cerrar[/dim]", id="uc_actions"),
                     id="uc_files",
                 ),
                 Vertical(
@@ -719,6 +720,21 @@ class VentanaUncommitted(ModalScreen):
             self.notify("No se puede stagear hunks de archivos no trackeados.", severity="warning")
             return
         self.app.push_screen(VentanaStageHunk(ruta), lambda _: self._refrescar())
+
+    def action_descartar_cambios(self) -> None:
+        lista = self.query_one("#uc_file_list", ListView)
+        item = lista.highlighted_child
+        if not item:
+            return
+        ruta = getattr(item, "archivo_ruta", None)
+        if not ruta:
+            return
+        try:
+            self.git.discard_changes(ruta)
+            self.notify(f"Cambios descartados: {ruta}")
+            self._refrescar()
+        except (GitCommandError, RuntimeError) as e:
+            self._notify_error(e)
 
     def action_agregar_gitignore(self) -> None:
         lista = self.query_one("#uc_file_list", ListView)

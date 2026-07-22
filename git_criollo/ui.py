@@ -1,6 +1,7 @@
 import os
 import re
 
+from textual import work
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, ListView, ListItem, Label
 from textual.containers import Horizontal, Vertical
@@ -58,6 +59,7 @@ class GitCriolloApp(App):
         ("M", "resolver_conflictos", "Merge"),
         ("i", "ver_gitignore", ".gitignore"),
         ("I", "agregar_gitignore", "Ignore"),
+        ("x", "descartar_cambios", "Descartar"),
         ("?", "ayuda", "Ayuda"),
         ("C", "uncommitted", "Cambios"),
     ]
@@ -105,7 +107,7 @@ class GitCriolloApp(App):
                 Label("", id="info_rama"),
                 Label(
                     "[dim][[n]] Rama  [[c]] Checkout  [[d]] Borrar  [[m]] Merge  "
-                    "[[C]] Cambios  [[p]] Hunk  [[i]] .gitignore  [[?]] Ayuda[/dim]",
+                    "[[C]] Cambios  [[p]] Hunk  [[x]] Descartar  [[i]] .gitignore  [[?]] Ayuda[/dim]",
                     id="atajos_help"
                 ),
                 classes="columna"
@@ -404,6 +406,7 @@ class GitCriolloApp(App):
                     self._notify_error(e)
         self.push_screen(VentanaConfirmarMerge(r), p)
 
+    @work(thread=True)
     def action_pull_rama(self) -> None:
         self.notify("Git pull...")
         try:
@@ -413,6 +416,7 @@ class GitCriolloApp(App):
         except (GitCommandError, RuntimeError) as e:
             self._notify_error(e)
 
+    @work(thread=True)
     def action_push_rama(self) -> None:
         self.notify("Git push...")
         try:
@@ -423,6 +427,7 @@ class GitCriolloApp(App):
         except (GitCommandError, RuntimeError) as e:
             self._notify_error(e)
 
+    @work(thread=True)
     def action_fetch_rama(self) -> None:
         self.notify("Git fetch...")
         try:
@@ -628,6 +633,24 @@ class GitCriolloApp(App):
         try:
             self.git.add_to_gitignore(ruta)
             self.notify(f"Ignorado: {ruta}")
+            self.actualizar_status()
+        except (GitCommandError, RuntimeError) as e:
+            self._notify_error(e)
+
+    def action_descartar_cambios(self) -> None:
+        focused = self.focused
+        if not focused or focused.id not in ("lista_staged", "lista_unstaged"):
+            self.notify("Seleccioná un archivo modificado en el panel de estado.", severity="warning")
+            return
+        item = focused.highlighted_child
+        if not item:
+            return
+        ruta = getattr(item, "archivo_ruta", None)
+        if not ruta:
+            return
+        try:
+            self.git.discard_changes(ruta)
+            self.notify(f"Cambios descartados: {ruta}")
             self.actualizar_status()
         except (GitCommandError, RuntimeError) as e:
             self._notify_error(e)

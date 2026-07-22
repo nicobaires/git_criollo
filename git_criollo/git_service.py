@@ -410,9 +410,12 @@ class GitService:
             f.write(todo_content)
             todo_path = f.name
         try:
+            #self.repo.git.execute(
+                #["git", "rebase", "-i", base_sha],
+                #env={**os.environ, "GIT_SEQUENCE_EDITOR": f"cp {todo_path}"},
             self.repo.git.execute(
                 ["git", "rebase", "-i", base_sha],
-                env={**os.environ, "GIT_SEQUENCE_EDITOR": f"cp {todo_path}"},
+                env={**os.environ, "GIT_SEQUENCE_EDITOR": f'cp "{todo_path}"'},
             )
         except Exception as e:
             logging.exception(f"Error en rebase interactivo: {e}")
@@ -501,3 +504,12 @@ class GitService:
             if content and not content.endswith("\n"):
                 f.write("\n")
             f.write(pattern + "\n")
+
+    def discard_changes(self, path: str) -> None:
+        """Descarta cambios locales en el working directory."""
+        if path in self.repo.untracked_files:
+            full_path = os.path.join(self.repo.working_tree_dir, path)
+            if os.path.isfile(full_path):
+                os.remove(full_path)
+        else:
+            self.repo.git.checkout("--", path)
