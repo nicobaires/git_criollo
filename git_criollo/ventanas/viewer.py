@@ -13,7 +13,7 @@ class VentanaDiff(ModalScreen):
     VentanaDiff { align: center middle; background: rgba(0,0,0,0.6); }
     #dialog_diff { padding: 1 2; background: #121212; border: heavy #00afff; width: 80%; height: 80%; }
     #diff_container { height: 1fr; }
-    Static { background: #1a1a1a; padding: 1; }
+    #diff_container Static { background: #1a1a1a; padding: 1; }
     """
     def __init__(self, path: str, diff: str): super().__init__(); self.path = path; self.diff = diff
     def compose(self) -> ComposeResult:
@@ -30,16 +30,14 @@ class VentanaDetalleCommit(ModalScreen):
     BINDINGS = [("escape", "quit", "Cerrar"), ("q", "quit", "Cerrar")]
     CSS = """
     VentanaDetalleCommit { align: center middle; background: rgba(0,0,0,0.6); }
-    #dialog_detail { padding: 1 2; background: #121212; border: heavy #00afff; width: 85%; height: 85%; }
+    #dialog_detail { padding: 1 2; background: #121212; border: heavy #00afff; width: 90%; height: 90%; }
     #meta_section { height: auto; padding: 0 0 1 0; border-bottom: solid #333; }
     #meta_section Label { margin: 0; }
-    #message_label { margin: 1 0; height: auto; }
-    #files_section { height: auto; max-height: 6; margin: 0 0 1 0; padding: 0 1; border-bottom: solid #333; }
+    #message_label { margin: 0 1; height: auto; }
+    #files_container { height: 4; border-bottom: solid #333; margin: 0; }
+    #files_section { margin: 0; padding: 0 1; }
     #detail_container { height: 1fr; }
-    Static { background: #1a1a1a; padding: 1; }
-    .file_line { margin: 0; color: #aaa; }
-    .add { color: #00ff00; }
-    .del { color: #ff5f5f; }
+    #detail_container Static { background: #1a1a1a; padding: 1; }
     """
     def __init__(self, detail: CommitDetail): super().__init__(); self.detail = detail
 
@@ -59,8 +57,10 @@ class VentanaDetalleCommit(ModalScreen):
                 id="meta_section",
             ),
             Label(detail.message, id="message_label"),
-            Label(f"[bold]Archivos ({len(detail.files)})[/]"),
-            Label(lines, id="files_section"),
+            Vertical(
+                Label(f"[bold]Archivos ({len(detail.files)})[/]"),
+                ScrollableContainer(Label(lines, id="files_section"), id="files_container"),
+            ),
             ScrollableContainer(Static(_diff_coloreado(detail.diff), markup=True), id="detail_container"),
             Label("[dim][Q / ESC] Cerrar[/dim]"),
             id="dialog_detail"

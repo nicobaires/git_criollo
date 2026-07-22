@@ -29,7 +29,7 @@ uv add gitpython textual
 uv run pytest tests/
 ```
 
-72 tests que cubren toda la capa de servicio (`git_service.py`), formateo de diffs (`diff_utils.py`) y manejo de errores (`error_utils.py`). Usan repositorios temporales creados con `tmpdir` + `git init`, sin depender de fixtures externos.
+72 tests que cubren toda la capa de servicio (`git_service.py`), formateo de diffs (`diff_utils.py`) y manejo de errores (`error_utils.py`). Usan repositorios temporales creados con `tmpdir` + `git init`, sin depender de fixtures externos. Ejecutalos con `uv run pytest tests/ -v`.
 
 ### Correcciones incluidas
 
@@ -101,7 +101,7 @@ Presioná `?` dentro de la aplicación para ver la ayuda completa.
 
 - **Ramas**: crear, checkout, borrar (con confirmación), merge, ver ramas locales y remotas con ahead/behind
 - **Cambios**: stage/unstage por archivo o global, **interactive staging** (`p`: stagear hunks individuales), diff coloreado con word-diff (verde/rojo para líneas + fondos para palabras +/-, azul para @@), commit, amend, stash push/pop. Pantalla completa con `C`: lista de archivos con contador, diff navegable por flechas, stage/unstage con Enter. Gestión de `.gitignore`: ver (`i`) y agregar untracked (`I`).
-- **Historial**: lista paginada de commits con detalle, **rebase interactivo** (`R`: pick/reword/squash/fixup/drop), log gráfico (`git log --graph --oneline --all`), detalle completo con diff coloreado al presionar Enter
+- **Historial**: lista paginada de commits con detalle, **rebase interactivo** (`R`: pick/reword/squash/fixup/drop), log gráfico (`git log --graph --oneline --all`), detalle completo con Enter: metadatos (autor/committer/fechas), lista de archivos con ± líneas (scrolleable), diff coloreado con proporciones adaptativas
 - **Tags**: crear y borrar tags desde la interfaz
 - **Resolución de conflictos**: (`M`) resolver conflictos de merge eligiendo ours/theirs/both por cada región
 - **Cherry-pick**: aplicar commits de otras ramas por SHA

@@ -1,5 +1,6 @@
 from textual.app import ComposeResult
-from textual.widgets import Input, Label, Vertical
+from textual.widgets import Input, Label
+from textual.containers import Vertical
 from textual.screen import ModalScreen
 
 
