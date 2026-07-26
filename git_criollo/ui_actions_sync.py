@@ -1,5 +1,4 @@
 from textual import work
-from git import GitCommandError
 
 from git_criollo.ventanas import confirmar_push
 
@@ -12,7 +11,7 @@ class MixinSyncActions:
             self.git.pull()
             self.notify("\u00a1Pull OK!")
             self.call_from_thread(self.actualizar_pantalla_completa)
-        except (GitCommandError, RuntimeError) as e:
+        except (Exception,) as e:
             self._notify_error(e)
 
     def action_push_rama(self) -> None:
@@ -30,7 +29,7 @@ class MixinSyncActions:
             self.git.push(branch)
             self.notify("\u00a1Push OK!")
             self.call_from_thread(self.actualizar_pantalla_completa)
-        except (GitCommandError, RuntimeError) as e:
+        except (Exception,) as e:
             self._notify_error(e)
 
     @work(thread=True)
@@ -40,5 +39,5 @@ class MixinSyncActions:
             self.git.fetch()
             self.notify("\u00a1Fetch OK!")
             self.call_from_thread(self.actualizar_pantalla_completa)
-        except (GitCommandError, RuntimeError) as e:
+        except (Exception,) as e:
             self._notify_error(e)

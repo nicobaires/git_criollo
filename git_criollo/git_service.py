@@ -182,38 +182,26 @@ class GitService:
     def amend_commit(self, message: str) -> None:
         self.repo.git.commit("--amend", "-m", message)
 
-    def pull(self) -> None:
+    def _remote_op(self, method_name: str, *args) -> None:
+        """Ejecuta una operación en el remote por defecto."""
         try:
             remote = self.repo.remote()
-            remote.pull()
+            getattr(remote, method_name)(*args)
         except ValueError as e:
             logger.error(f"No hay remote por defecto configurado: {e}")
             raise RuntimeError("No hay remote por defecto configurado. Usá 'git remote add' primero.") from e
         except GitCommandError as e:
-            logger.exception(f"Error en pull: {e}")
+            logger.exception(f"Error en {method_name}: {e}")
             raise
+
+    def pull(self) -> None:
+        self._remote_op("pull")
 
     def push(self, branch: str) -> None:
-        try:
-            remote = self.repo.remote()
-            remote.push(branch)
-        except ValueError as e:
-            logger.error(f"No hay remote por defecto configurado: {e}")
-            raise RuntimeError("No hay remote por defecto configurado.") from e
-        except GitCommandError as e:
-            logger.exception(f"Error en push: {e}")
-            raise
+        self._remote_op("push", branch)
 
     def fetch(self) -> None:
-        try:
-            remote = self.repo.remote()
-            remote.fetch()
-        except ValueError as e:
-            logger.error(f"No hay remote por defecto: {e}")
-            raise RuntimeError("No hay remote por defecto configurado.") from e
-        except GitCommandError as e:
-            logger.exception(f"Error en fetch: {e}")
-            raise
+        self._remote_op("fetch")
 
     def merge(self, branch: str) -> None:
         self.repo.git.merge(branch)

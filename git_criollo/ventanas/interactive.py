@@ -8,6 +8,13 @@ from git_criollo.diff_utils import _diff_coloreado
 from git_criollo.error_utils import notify_error as _error_base
 
 
+def _notify_screen_error(notify_method, e: Exception) -> None:
+    """Error handler para ModalScreens que no heredan de la app principal."""
+    if isinstance(e, (KeyboardInterrupt, SystemExit)):
+        raise
+    _error_base(notify_method, e, timeout=10)
+
+
 class VentanaStageHunk(ModalScreen[bool]):
     BINDINGS = [
         ("escape", "quit", "Cancelar"),
@@ -79,9 +86,7 @@ class VentanaStageHunk(ModalScreen[bool]):
         self._mostrar_hunk()
 
     def _notify_error(self, e: Exception) -> None:
-        if isinstance(e, (KeyboardInterrupt, SystemExit)):
-            raise
-        _error_base(self.notify, e, timeout=10)
+        _notify_screen_error(self.notify, e)
 
     def action_quit(self) -> None:
         self.dismiss(True)
@@ -267,9 +272,7 @@ class VentanaConflictos(ModalScreen[bool]):
         self._resolver_y_avanzar("both")
 
     def _notify_error(self, e: Exception) -> None:
-        if isinstance(e, (KeyboardInterrupt, SystemExit)):
-            raise
-        _error_base(self.notify, e, timeout=10)
+        _notify_screen_error(self.notify, e)
 
     def action_quit(self) -> None:
         self.dismiss(False)

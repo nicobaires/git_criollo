@@ -1,6 +1,6 @@
 from textual.widgets import ListView
-from git import GitCommandError
 
+from git_criollo.helpers import git_action
 from git_criollo.ventanas import (
     VentanaCommit, VentanaStashPush, VentanaDiff, VentanaAmend,
     VentanaUncommitted, VentanaStageHunk, VentanaResultado,
@@ -12,13 +12,10 @@ class MixinChangeActions:
     def action_uncommitted(self) -> None:
         self.push_screen(VentanaUncommitted())
 
+    @git_action("Todos los cambios agregados al Stage.")
     def action_stage_all(self) -> None:
-        try:
-            self.git.stage_all()
-            self.notify("Todos los cambios agregados al Stage.")
-            self.actualizar_status()
-        except (GitCommandError, RuntimeError) as e:
-            self._notify_error(e)
+        self.git.stage_all()
+        self.actualizar_status()
 
     def action_commit_cambios(self) -> None:
         info = self.git.get_status()
@@ -32,7 +29,7 @@ class MixinChangeActions:
                     self.git.commit(mensaje)
                     self.notify("\u00a1Commit creado con \u00e9xito!")
                     self.actualizar_pantalla_completa()
-                except (GitCommandError, RuntimeError) as e:
+                except (Exception,) as e:
                     self._notify_error(e)
         self.push_screen(VentanaCommit(), guardar_commit)
 
@@ -44,7 +41,7 @@ class MixinChangeActions:
                 self.git.stash_push(val)
                 self.notify("Stash guardado.")
                 self.actualizar_status()
-            except (GitCommandError, RuntimeError) as e:
+            except (Exception,) as e:
                 self._notify_error(e)
         self.push_screen(VentanaStashPush(), p)
 
@@ -55,7 +52,7 @@ class MixinChangeActions:
                     self.git.stash_pop()
                     self.notify("Stash recuperado.")
                     self.actualizar_status()
-                except (GitCommandError, RuntimeError) as e:
+                except (Exception,) as e:
                     self._notify_error(e)
         self.push_screen(confirmar_stash_pop(), p)
 
@@ -88,7 +85,7 @@ class MixinChangeActions:
                             self.git.amend_commit(mensaje)
                             self.notify("Commit modificado (amend).")
                             self.actualizar_pantalla_completa()
-                        except (GitCommandError, RuntimeError) as e:
+                        except (Exception,) as e:
                             self._notify_error(e)
                 self.push_screen(VentanaAmend(), p)
         self.push_screen(confirmar_amend(), confirmar)
@@ -97,7 +94,7 @@ class MixinChangeActions:
         try:
             contenido = self.git.get_gitignore_content()
             self.push_screen(VentanaResultado(".gitignore", contenido))
-        except (GitCommandError, RuntimeError) as e:
+        except (Exception,) as e:
             self._notify_error(e)
 
     def action_agregar_gitignore(self) -> None:
@@ -119,7 +116,7 @@ class MixinChangeActions:
             self.git.add_to_gitignore(ruta)
             self.notify(f"Ignorado: {ruta}")
             self.actualizar_status()
-        except (GitCommandError, RuntimeError) as e:
+        except (Exception,) as e:
             self._notify_error(e)
 
     def action_descartar_cambios(self) -> None:
@@ -140,7 +137,7 @@ class MixinChangeActions:
                     self.git.discard_changes(ruta)
                     self.notify(f"Cambios descartados: {ruta}")
                     self.actualizar_status()
-                except (GitCommandError, RuntimeError) as e:
+                except (Exception,) as e:
                     self._notify_error(e)
         self.push_screen(confirmar_descarte(ruta), confirmar)
 

@@ -2,10 +2,9 @@ from textual.app import ComposeResult
 from textual.widgets import ListView, ListItem, Label, Static
 from textual.containers import Horizontal, Vertical, ScrollableContainer
 from textual.screen import ModalScreen
-from git import GitCommandError
 
 from git_criollo.diff_utils import _diff_coloreado
-from git_criollo.error_utils import notify_error as _error_base
+from git_criollo.helpers import render_status_list_single
 from git_criollo.ventanas.viewer import VentanaDiff
 from git_criollo.ventanas.input import VentanaCommit
 from git_criollo.ventanas.interactive import VentanaStageHunk
@@ -69,27 +68,9 @@ class VentanaUncommitted(ModalScreen):
     def _refrescar(self) -> None:
         info = self.git.get_status()
         lista = self.query_one("#uc_file_list", ListView)
-        lista.clear()
-        self._archivos = []
-
-        for f in info.staged:
-            self._archivos.append((f, True))
-            item = ListItem(Label(f"  \u2714 {f}"))
-            item.archivo_ruta = f
-            item.archivo_staged = True
-            lista.append(item)
-        for f in info.unstaged:
-            self._archivos.append((f, False))
-            item = ListItem(Label(f"  \ud83d\udca5 M: {f}"))
-            item.archivo_ruta = f
-            item.archivo_staged = False
-            lista.append(item)
-        for f in info.untracked:
-            self._archivos.append((f, False))
-            item = ListItem(Label(f"  \u2753 ?: {f}"))
-            item.archivo_ruta = f
-            item.archivo_staged = False
-            lista.append(item)
+        self._archivos = render_status_list_single(
+            lista, info.staged, info.unstaged, info.untracked
+        )
 
         titulo = self.query_one("#uc_title", Label)
         n = len(self._archivos)
@@ -111,10 +92,7 @@ class VentanaUncommitted(ModalScreen):
 
     def _actualizar_diff(self, ruta: str, staged: bool) -> None:
         container = self.query_one("#uc_diff_container", ScrollableContainer)
-        if staged:
-            raw = self.git.get_diff(ruta, staged=True)
-        else:
-            raw = self.git.get_diff(ruta, staged=False)
+        raw = self.git.get_diff(ruta, staged=staged)
         header = self.query_one("#uc_diff_header", Label)
         header.update(f"[bold]{'[Staged] ' if staged else ''}{ruta}[/]")
         container.remove_children()
@@ -145,7 +123,7 @@ class VentanaUncommitted(ModalScreen):
             else:
                 self.git.stage_file(ruta)
             self._refrescar()
-        except (GitCommandError, RuntimeError) as e:
+        except (Exception,) as e:
             self._notify_error(e)
 
     def action_ver_diff(self) -> None:
@@ -165,7 +143,7 @@ class VentanaUncommitted(ModalScreen):
         try:
             self.git.stage_all()
             self._refrescar()
-        except (GitCommandError, RuntimeError) as e:
+        except (Exception,) as e:
             self._notify_error(e)
 
     def action_commit_cambios(self) -> None:
@@ -179,7 +157,7 @@ class VentanaUncommitted(ModalScreen):
                 try:
                     self.git.commit(mensaje)
                     self._refrescar()
-                except (GitCommandError, RuntimeError) as e:
+                except (Exception,) as e:
                     self._notify_error(e)
 
         self.app.push_screen(VentanaCommit(), guardar)
@@ -187,6 +165,7 @@ class VentanaUncommitted(ModalScreen):
     def _notify_error(self, e: Exception) -> None:
         if isinstance(e, (KeyboardInterrupt, SystemExit)):
             raise
+        from git_criollo.error_utils import notify_error as _error_base
         _error_base(self.notify, e, timeout=10)
 
     def action_stage_hunk(self) -> None:
@@ -222,7 +201,7 @@ class VentanaUncommitted(ModalScreen):
                     self.git.discard_changes(ruta)
                     self.notify(f"Cambios descartados: {ruta}")
                     self._refrescar()
-                except (GitCommandError, RuntimeError) as e:
+                except (Exception,) as e:
                     self._notify_error(e)
         self.app.push_screen(confirmar_descarte(ruta), confirmar)
 
@@ -242,7 +221,7 @@ class VentanaUncommitted(ModalScreen):
             self.git.add_to_gitignore(ruta)
             self.notify(f"Ignorado: {ruta}")
             self._refrescar()
-        except (GitCommandError, RuntimeError) as e:
+        except (Exception,) as e:
             self._notify_error(e)
 
     def action_quit(self) -> None:

@@ -1,8 +1,6 @@
-import re
+from textual.widgets import ListView
 
-from textual.widgets import ListView, ListItem, Label
-from git import GitCommandError
-
+from git_criollo.helpers import git_action
 from git_criollo.ventanas import (
     VentanaDetalleCommit, VentanaCherryPick, VentanaRebase, VentanaConflictos,
     confirmar_cherrypick, confirmar_rebase,
@@ -21,35 +19,25 @@ class MixinHistoryActions:
         n = 20
         if self._modo_grafico:
             lineas = self.git.get_graph_log(skip=self._commit_offset, n=n)
-            for linea in lineas:
-                item = ListItem(Label(f"[dim]{linea}[/dim]"))
-                m = re.search(r'[a-f0-9]{7,}', linea)
-                if m:
-                    item.commit_hash = m.group()
-                lista.append(item)
+            from git_criollo.helpers import render_commit_list
+            render_commit_list(lista, lineas, modo_grafico=True)
             if lineas:
                 self._commit_offset += len(lineas)
             else:
                 self.notify("No hay m\u00e1s commits.")
         else:
             commits = self.git.get_commits(skip=self._commit_offset, n=n)
-            for c in commits:
-                item = ListItem(Label(
-                    f"[#ffaf00]{c.hash}[/#ffaf00] - {c.message} [dim]({c.author})[/dim]"
-                ))
-                item.commit_hash = c.hash
-                lista.append(item)
+            from git_criollo.helpers import render_commit_list
+            render_commit_list(lista, commits, modo_grafico=False)
             if commits:
                 self._commit_offset += len(commits)
             else:
                 self.notify("No hay m\u00e1s commits.")
 
+    @git_action()
     def _mostrar_detalle_commit(self, sha: str) -> None:
-        try:
-            detail = self.git.get_commit_detail(sha)
-            self.push_screen(VentanaDetalleCommit(detail))
-        except (GitCommandError, RuntimeError) as e:
-            self._notify_error(e)
+        detail = self.git.get_commit_detail(sha)
+        self.push_screen(VentanaDetalleCommit(detail))
 
     def action_cherry_pick(self) -> None:
         def p(sha: str | None):
@@ -60,7 +48,7 @@ class MixinHistoryActions:
                             self.git.cherry_pick(sha)
                             self.notify(f"Cherry-pick de {sha} aplicado.")
                             self.actualizar_pantalla_completa()
-                        except (GitCommandError, RuntimeError) as e:
+                        except (Exception,) as e:
                             self._notify_error(e)
                 self.push_screen(confirmar_cherrypick(sha), confirmar)
         self.push_screen(VentanaCherryPick(), p)
@@ -89,7 +77,7 @@ class MixinHistoryActions:
                             self.git.run_rebase(base_sha, todos)
                             self.notify("Rebase completado.")
                             self.actualizar_pantalla_completa()
-                        except (GitCommandError, RuntimeError) as e:
+                        except (Exception,) as e:
                             self._notify_error(e)
                 self.push_screen(confirmar_rebase(), confirmar)
         self.push_screen(VentanaRebase(commits), ejecutar)

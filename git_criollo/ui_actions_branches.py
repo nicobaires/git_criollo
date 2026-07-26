@@ -1,6 +1,6 @@
 from textual.widgets import ListView
-from git import GitCommandError
 
+from git_criollo.helpers import git_action
 from git_criollo.ventanas import (
     VentanaNuevaRama, VentanaTag,
     confirmar_borrado_rama, confirmar_merge, confirmar_borrado_tag,
@@ -8,15 +8,12 @@ from git_criollo.ventanas import (
 
 
 class MixinBranchActions:
+    @git_action("Rama creada.")
     def action_nueva_rama(self) -> None:
         def p(n: str | None):
             if n:
-                try:
-                    self.git.create_branch(n)
-                    self.notify(f"Rama '{n}' creada.")
-                    self.actualizar_ramas()
-                except (GitCommandError, RuntimeError) as e:
-                    self._notify_error(e)
+                self.git.create_branch(n)
+                self.actualizar_ramas()
         self.push_screen(VentanaNuevaRama(), p)
 
     def action_cambiar_rama(self) -> None:
@@ -31,12 +28,11 @@ class MixinBranchActions:
         try:
             if es_remota:
                 self.git.checkout_remote(r)
-                self.notify(f"Checkout: {r}")
             else:
                 self.git.checkout(r)
-                self.notify(f"Checkout: {r}")
+            self.notify(f"Checkout: {r}")
             self.actualizar_pantalla_completa()
-        except (GitCommandError, RuntimeError) as e:
+        except (Exception,) as e:
             self._notify_error(e)
 
     def action_eliminar_rama(self) -> None:
@@ -64,7 +60,7 @@ class MixinBranchActions:
                     self.git.delete_branch(r)
                     self.notify(f"Borrada: {r}")
                     self.actualizar_pantalla_completa()
-                except (GitCommandError, RuntimeError) as e:
+                except (Exception,) as e:
                     self._notify_error(e)
         if r:
             self.push_screen(confirmar_borrado_rama(r), p)
@@ -89,28 +85,23 @@ class MixinBranchActions:
                     self.git.merge(r)
                     self.notify(f"Merged {r} en {info.active}")
                     self.actualizar_pantalla_completa()
-                except (GitCommandError, RuntimeError) as e:
+                except (Exception,) as e:
                     self._notify_error(e)
         self.push_screen(confirmar_merge(r), p)
 
+    @git_action()
     def _borrar_tag_si_confirmado(self, b: bool | None, tag_name: str) -> None:
         if b:
-            try:
-                self.git.delete_tag(tag_name)
-                self.notify(f"Tag '{tag_name}' borrado.")
-                self.actualizar_ramas()
-            except (GitCommandError, RuntimeError) as e:
-                self._notify_error(e)
+            self.git.delete_tag(tag_name)
+            self.notify(f"Tag '{tag_name}' borrado.")
+            self.actualizar_ramas()
 
+    @git_action("Tag creado.")
     def action_crear_tag(self) -> None:
         def p(nombre: str | None):
             if nombre:
-                try:
-                    self.git.create_tag(nombre)
-                    self.notify(f"Tag '{nombre}' creado.")
-                    self.actualizar_ramas()
-                except (GitCommandError, RuntimeError) as e:
-                    self._notify_error(e)
+                self.git.create_tag(nombre)
+                self.actualizar_ramas()
         self.push_screen(VentanaTag(), p)
 
     def action_eliminar_tag(self) -> None:

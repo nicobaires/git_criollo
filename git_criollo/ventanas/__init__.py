@@ -1,4 +1,5 @@
 from git_criollo.ventanas.input import (
+    VentanaInput,
     VentanaNuevaRama,
     VentanaCommit,
     VentanaStashPush,
@@ -33,6 +34,7 @@ from git_criollo.ventanas.interactive import (
 )
 
 __all__ = [
+    "VentanaInput",
     "VentanaNuevaRama",
     "VentanaCommit",
     "VentanaStashPush",

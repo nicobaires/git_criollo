@@ -4,134 +4,116 @@ from textual.containers import Vertical
 from textual.screen import ModalScreen
 
 
-class VentanaNuevaRama(ModalScreen[str]):
+class VentanaInput(ModalScreen[str]):
+    """Diálogo de input genérico y estilizado."""
+
     BINDINGS = [("escape", "quit", "Cancelar")]
+
     CSS = """
-    VentanaNuevaRama { align: center middle; background: rgba(0,0,0,0.6); }
-    #dialog_create { padding: 1 2; background: #262626; border: heavy #00afd7; width: 50; height: 11; }
-    Input { margin-top: 1; }
+    VentanaInput { align: center middle; background: rgba(0,0,0,0.6); }
+    #input_box { padding: 1 2; background: $surface; border: heavy $accent; width: 56; height: 11; }
+    #input_box Input { margin-top: 1; }
+    #input_hint { margin-top: 0; }
     """
+
+    def __init__(
+        self,
+        titulo: str,
+        descripcion: str,
+        placeholder: str = "",
+        color: str = "#888",
+        width: int = 56,
+    ):
+        super().__init__()
+        self._titulo = titulo
+        self._descripcion = descripcion
+        self._placeholder = placeholder
+        self._color = color
+        self._width = width
+
     def compose(self) -> ComposeResult:
-        yield Vertical(
-            Label("[bold #00afd7]Crear Nueva Rama[/]\nNombre de la rama:"),
-            Input(placeholder="ej. mejora-interfaz"),
-            Label("\n[ESC para cancelar]"),
-            id="dialog_create"
-        )
+        with Vertical(id="input_box"):
+            yield Label(f"[bold {self._color}]{self._titulo}[/]\n{self._descripcion}")
+            yield Input(placeholder=self._placeholder)
+            yield Label("\n[dim]ESC para cancelar[/dim]", id="input_hint")
+
+    def on_mount(self) -> None:
+        self.query_one("#input_box").styles.border_color = self._color
+        self.query_one("#input_box").styles.width = self._width
+
     def on_input_submitted(self, event: Input.Submitted) -> None:
-        if event.value.strip(): self.dismiss(event.value.strip())
-    def action_quit(self) -> None: self.dismiss("")
+        if event.value.strip():
+            self.dismiss(event.value.strip())
+
+    def action_quit(self) -> None:
+        self.dismiss("")
 
 
-class VentanaCommit(ModalScreen[str]):
-    BINDINGS = [("escape", "quit", "Cancelar")]
-    CSS = """
-    VentanaCommit { align: center middle; background: rgba(0, 0, 0, 0.6); }
-    #dialog_commit { padding: 1 2; background: #262626; border: heavy #ffaf00; width: 60; height: 11; }
-    Input { margin-top: 1; }
-    """
-    def compose(self) -> ComposeResult:
-        yield Vertical(
-            Label("[bold #ffaf00]Confirmar Commit[/]\nEscribe el mensaje del commit y presiona Enter:"),
-            Input(placeholder="ej. fix: corrige error en ventana modal"),
-            Label("\n[Presiona ESC para cancelar]"),
-            id="dialog_commit"
-        )
-    def on_input_submitted(self, event: Input.Submitted) -> None:
-        if event.value.strip(): self.dismiss(event.value.strip())
-    def action_quit(self) -> None: self.dismiss("")
+def VentanaNuevaRama() -> VentanaInput:
+    return VentanaInput(
+        titulo="Crear Nueva Rama",
+        descripcion="Nombre de la rama:",
+        placeholder="ej. mejora-interfaz",
+        color="#00afd7",
+        width=50,
+    )
 
 
-class VentanaStashPush(ModalScreen):
-    BINDINGS = [("escape", "quit", "Cancelar")]
-    CSS = """
-    VentanaStashPush { align: center middle; background: rgba(0,0,0,0.6); }
-    #dialog_stash { padding: 1 2; background: #262626; border: heavy #af5fff; width: 60; height: 11; }
-    Input { margin-top: 1; }
-    """
-    def compose(self) -> ComposeResult:
-        yield Vertical(
-            Label("[bold #af5fff]Stash Push[/]\nMensaje (opcional, Enter para stash sin mensaje):"),
-            Input(placeholder="mensaje opcional"),
-            Label("\n[ESC para cancelar]"),
-            id="dialog_stash"
-        )
-    def on_input_submitted(self, event: Input.Submitted) -> None:
-        self.dismiss(event.value.strip())
-    def action_quit(self) -> None: self.dismiss(None)
+def VentanaCommit() -> VentanaInput:
+    return VentanaInput(
+        titulo="Confirmar Commit",
+        descripcion="Escribe el mensaje del commit y presiona Enter:",
+        placeholder="ej. fix: corrige error en ventana modal",
+        color="#ffaf00",
+        width=60,
+    )
 
 
-class VentanaAmend(ModalScreen[str]):
-    BINDINGS = [("escape", "quit", "Cancelar")]
-    CSS = """
-    VentanaAmend { align: center middle; background: rgba(0, 0, 0, 0.6); }
-    #dialog_amend { padding: 1 2; background: #262626; border: heavy #ffaf00; width: 60; height: 11; }
-    Input { margin-top: 1; }
-    """
-    def compose(self) -> ComposeResult:
-        yield Vertical(
-            Label("[bold #ffaf00]Amend Commit[/]\nNuevo mensaje del commit:"),
-            Input(placeholder="ej. fix: corrige error en ventana modal"),
-            Label("\n[Presiona ESC para cancelar]"),
-            id="dialog_amend"
-        )
-    def on_input_submitted(self, event: Input.Submitted) -> None:
-        if event.value.strip(): self.dismiss(event.value.strip())
-    def action_quit(self) -> None: self.dismiss("")
+def VentanaStashPush() -> VentanaInput:
+    return VentanaInput(
+        titulo="Stash Push",
+        descripcion="Mensaje (opcional, Enter para stash sin mensaje):",
+        placeholder="mensaje opcional",
+        color="#af5fff",
+        width=60,
+    )
 
 
-class VentanaTag(ModalScreen[str]):
-    BINDINGS = [("escape", "quit", "Cancelar")]
-    CSS = """
-    VentanaTag { align: center middle; background: rgba(0,0,0,0.6); }
-    #dialog_tag { padding: 1 2; background: #262626; border: heavy #00afd7; width: 50; height: 11; }
-    Input { margin-top: 1; }
-    """
-    def compose(self) -> ComposeResult:
-        yield Vertical(
-            Label("[bold #00afd7]Crear Tag[/]\nNombre del tag:"),
-            Input(placeholder="ej. v1.0.0"),
-            Label("\n[ESC para cancelar]"),
-            id="dialog_tag"
-        )
-    def on_input_submitted(self, event: Input.Submitted) -> None:
-        if event.value.strip(): self.dismiss(event.value.strip())
-    def action_quit(self) -> None: self.dismiss("")
+def VentanaAmend() -> VentanaInput:
+    return VentanaInput(
+        titulo="Amend Commit",
+        descripcion="Nuevo mensaje del commit:",
+        placeholder="ej. fix: corrige error en ventana modal",
+        color="#ffaf00",
+        width=60,
+    )
 
 
-class VentanaCherryPick(ModalScreen[str]):
-    BINDINGS = [("escape", "quit", "Cancelar")]
-    CSS = """
-    VentanaCherryPick { align: center middle; background: rgba(0,0,0,0.6); }
-    #dialog_cherry { padding: 1 2; background: #262626; border: heavy #af5fff; width: 60; height: 11; }
-    Input { margin-top: 1; }
-    """
-    def compose(self) -> ComposeResult:
-        yield Vertical(
-            Label("[bold #af5fff]Cherry-Pick[/]\nSHA del commit a aplicar:"),
-            Input(placeholder="ej. a1b2c3d"),
-            Label("\n[ESC para cancelar]"),
-            id="dialog_cherry"
-        )
-    def on_input_submitted(self, event: Input.Submitted) -> None:
-        if event.value.strip(): self.dismiss(event.value.strip())
-    def action_quit(self) -> None: self.dismiss("")
+def VentanaTag() -> VentanaInput:
+    return VentanaInput(
+        titulo="Crear Tag",
+        descripcion="Nombre del tag:",
+        placeholder="ej. v1.0.0",
+        color="#00afd7",
+        width=50,
+    )
 
 
-class VentanaComando(ModalScreen[str]):
-    BINDINGS = [("escape", "quit", "Cancelar")]
-    CSS = """
-    VentanaComando { align: center middle; background: rgba(0,0,0,0.6); }
-    #dialog_cmd { padding: 1 2; background: #262626; border: heavy #ffaf00; width: 60; height: 11; }
-    Input { margin-top: 1; }
-    """
-    def compose(self) -> ComposeResult:
-        yield Vertical(
-            Label("[bold #ffaf00]Comando Git[/]\nIngres\u00e1 un comando (sin el prefijo 'git '):"),
-            Input(placeholder="ej. log --oneline -3"),
-            Label("\n[ESC para cancelar]"),
-            id="dialog_cmd"
-        )
-    def on_input_submitted(self, event: Input.Submitted) -> None:
-        if event.value.strip(): self.dismiss(event.value.strip())
-    def action_quit(self) -> None: self.dismiss("")
+def VentanaCherryPick() -> VentanaInput:
+    return VentanaInput(
+        titulo="Cherry-Pick",
+        descripcion="SHA del commit a aplicar:",
+        placeholder="ej. a1b2c3d",
+        color="#af5fff",
+        width=60,
+    )
+
+
+def VentanaComando() -> VentanaInput:
+    return VentanaInput(
+        titulo="Comando Git",
+        descripcion="Ingresá un comando (sin el prefijo 'git '):",
+        placeholder="ej. log --oneline -3",
+        color="#ffaf00",
+        width=60,
+    )

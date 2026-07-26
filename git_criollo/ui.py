@@ -1,5 +1,4 @@
 import os
-import re
 
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, ListView, ListItem, Label
@@ -8,6 +7,7 @@ from git import GitCommandError
 
 from git_criollo.git_service import GitService
 from git_criollo.error_utils import notify_error as _notify_error_base
+from git_criollo.helpers import render_commit_list, render_status_lists
 from git_criollo.ayuda import VentanaAyuda
 from git_criollo.styles import CSS
 from git_criollo.ventanas import (
@@ -191,46 +191,18 @@ class GitCriolloApp(
         lista.clear()
         if self._modo_grafico:
             lineas = self.git.get_graph_log(skip=0, n=20)
-            for linea in lineas:
-                item = ListItem(Label(f"[dim]{linea}[/dim]"))
-                m = re.search(r'[a-f0-9]{7,}', linea)
-                if m:
-                    item.commit_hash = m.group()
-                lista.append(item)
-            self._commit_offset = len(lineas)
+            self._commit_offset = render_commit_list(lista, lineas, modo_grafico=True)
         else:
             commits = self.git.get_commits(skip=0, n=20)
-            for c in commits:
-                item = ListItem(Label(
-                    f"[#ffaf00]{c.hash}[/#ffaf00] - {c.message} [dim]({c.author})[/dim]"
-                ))
-                item.commit_hash = c.hash
-                lista.append(item)
-            self._commit_offset = len(commits)
+            self._commit_offset = render_commit_list(lista, commits, modo_grafico=False)
 
     def actualizar_status(self) -> None:
         info = self.git.get_status()
-
-        staged_list = self.query_one("#lista_staged", ListView)
-        staged_list.clear()
-        for f in info.staged:
-            item = ListItem(Label(f"  \u2714 {f}"))
-            item.archivo_ruta = f
-            item.archivo_staged = True
-            staged_list.append(item)
-
-        unstaged_list = self.query_one("#lista_unstaged", ListView)
-        unstaged_list.clear()
-        for f in info.unstaged:
-            item = ListItem(Label(f"  \ud83d\udca5 M: {f}"))
-            item.archivo_ruta = f
-            item.archivo_staged = False
-            unstaged_list.append(item)
-        for f in info.untracked:
-            item = ListItem(Label(f"  \u2753 ?: {f}"))
-            item.archivo_ruta = f
-            item.archivo_staged = False
-            unstaged_list.append(item)
+        render_status_lists(
+            self.query_one("#lista_staged", ListView),
+            self.query_one("#lista_unstaged", ListView),
+            info.staged, info.unstaged, info.untracked,
+        )
 
     # --- EVENTOS ---
 
