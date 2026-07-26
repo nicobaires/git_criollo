@@ -48,11 +48,11 @@ class VentanaDetalleCommit(BaseModalScreen):
     CSS = """
     VentanaDetalleCommit { align: center middle; background: rgba(0,0,0,0.6); }
     #dialog_detail { padding: 1; background: #121212; border: heavy #00afff; width: 90%; height: 90%; }
-    #left_panel { width: 35%; height: 100%; border-right: solid #333; padding: 1; }
+    #left_panel { width: 35%; max-height: 50%; border-right: solid #333; padding: 1; }
     #meta_section { height: auto; border-bottom: solid #333; padding: 0 0 1 0; }
     #meta_section Label { margin: 0; }
     #files_header { height: auto; margin-top: 1; }
-    #file_list { height: 1fr; border: tall #444; margin-top: 1; }
+    #file_list { height: 1fr; border: tall #444; margin-top: 1; overflow-y: auto; }
     #file_list:focus { border: tall #00afff; }
     #right_panel { width: 65%; height: 100%; padding: 0 1; }
     #message_label { height: auto; color: #ffaf00; padding: 1 0; border-bottom: solid #333; }
