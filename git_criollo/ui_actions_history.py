@@ -5,8 +5,8 @@ from git import GitCommandError
 
 from git_criollo.ventanas import (
     VentanaDetalleCommit, VentanaCherryPick, VentanaRebase, VentanaConflictos,
+    confirmar_cherrypick, confirmar_rebase,
 )
-from git_criollo.ventanas.confirm import VentanaConfirmarCherryPick, VentanaConfirmarRebase
 
 
 class MixinHistoryActions:
@@ -62,7 +62,7 @@ class MixinHistoryActions:
                             self.actualizar_pantalla_completa()
                         except (GitCommandError, RuntimeError) as e:
                             self._notify_error(e)
-                self.push_screen(VentanaConfirmarCherryPick(sha), confirmar)
+                self.push_screen(confirmar_cherrypick(sha), confirmar)
         self.push_screen(VentanaCherryPick(), p)
 
     def action_rebase(self) -> None:
@@ -91,7 +91,7 @@ class MixinHistoryActions:
                             self.actualizar_pantalla_completa()
                         except (GitCommandError, RuntimeError) as e:
                             self._notify_error(e)
-                self.push_screen(VentanaConfirmarRebase(), confirmar)
+                self.push_screen(confirmar_rebase(), confirmar)
         self.push_screen(VentanaRebase(commits), ejecutar)
 
     def action_resolver_conflictos(self) -> None:

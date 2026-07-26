@@ -1,7 +1,7 @@
 from textual import work
 from git import GitCommandError
 
-from git_criollo.ventanas.confirm import VentanaConfirmarPush
+from git_criollo.ventanas import confirmar_push
 
 
 class MixinSyncActions:
@@ -21,7 +21,7 @@ class MixinSyncActions:
         def confirmar(b: bool | None):
             if b:
                 self._ejecutar_push(active_branch)
-        self.push_screen(VentanaConfirmarPush(active_branch), confirmar)
+        self.push_screen(confirmar_push(active_branch), confirmar)
 
     @work(thread=True)
     def _ejecutar_push(self, branch: str) -> None:

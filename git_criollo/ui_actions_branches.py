@@ -2,8 +2,8 @@ from textual.widgets import ListView
 from git import GitCommandError
 
 from git_criollo.ventanas import (
-    VentanaNuevaRama, VentanaConfirmarBorrado, VentanaConfirmarMerge,
-    VentanaTag, VentanaConfirmarBorradoTag,
+    VentanaNuevaRama, VentanaTag,
+    confirmar_borrado_rama, confirmar_merge, confirmar_borrado_tag,
 )
 
 
@@ -51,7 +51,7 @@ class MixinBranchActions:
         info = self.git.get_branches()
         if r.startswith("tag:"):
             tag_name = r[4:]
-            self.push_screen(VentanaConfirmarBorradoTag(tag_name),
+            self.push_screen(confirmar_borrado_tag(tag_name),
                              lambda b, n=tag_name: self._borrar_tag_si_confirmado(b, n))
             return
         if r == info.active:
@@ -67,7 +67,7 @@ class MixinBranchActions:
                 except (GitCommandError, RuntimeError) as e:
                     self._notify_error(e)
         if r:
-            self.push_screen(VentanaConfirmarBorrado(r), p)
+            self.push_screen(confirmar_borrado_rama(r), p)
 
     def action_merge_rama(self) -> None:
         lista = self.query_one("#lista_ramas", ListView)
@@ -91,7 +91,7 @@ class MixinBranchActions:
                     self.actualizar_pantalla_completa()
                 except (GitCommandError, RuntimeError) as e:
                     self._notify_error(e)
-        self.push_screen(VentanaConfirmarMerge(r), p)
+        self.push_screen(confirmar_merge(r), p)
 
     def _borrar_tag_si_confirmado(self, b: bool | None, tag_name: str) -> None:
         if b:

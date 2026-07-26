@@ -10,8 +10,10 @@ from git_criollo.git_service import GitService
 from git_criollo.error_utils import notify_error as _notify_error_base
 from git_criollo.ayuda import VentanaAyuda
 from git_criollo.styles import CSS
-from git_criollo.ventanas import VentanaComando, VentanaResultado, VentanaConfirmarBorradoTag
-from git_criollo.ventanas.confirm import VentanaConfirmarSalir
+from git_criollo.ventanas import (
+    VentanaComando, VentanaResultado,
+    confirmar_borrado_tag, confirmar_salir,
+)
 from git_criollo.ui_actions_branches import MixinBranchActions
 from git_criollo.ui_actions_sync import MixinSyncActions
 from git_criollo.ui_actions_changes import MixinChangeActions
@@ -283,7 +285,7 @@ class GitCriolloApp(
             r = getattr(item, "rama_objeto", None)
             if r and r.startswith("tag:"):
                 tag_name = r[4:]
-                self.push_screen(VentanaConfirmarBorradoTag(tag_name),
+                self.push_screen(confirmar_borrado_tag(tag_name),
                                  lambda b, n=tag_name: self._borrar_tag_si_confirmado(b, n))
 
     # --- ACCIONES QUE QUEDAN EN UI ---
@@ -309,4 +311,4 @@ class GitCriolloApp(
         def confirmar(b: bool | None):
             if b:
                 self.exit()
-        self.push_screen(VentanaConfirmarSalir(), confirmar)
+        self.push_screen(confirmar_salir(), confirmar)

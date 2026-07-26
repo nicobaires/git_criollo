@@ -4,7 +4,7 @@ from git import GitCommandError
 from git_criollo.ventanas import (
     VentanaCommit, VentanaStashPush, VentanaDiff, VentanaAmend,
     VentanaUncommitted, VentanaStageHunk, VentanaResultado,
-    VentanaConfirmarDescarte, VentanaConfirmarAmend, VentanaConfirmarStashPop,
+    confirmar_descarte, confirmar_amend, confirmar_stash_pop,
 )
 
 
@@ -57,7 +57,7 @@ class MixinChangeActions:
                     self.actualizar_status()
                 except (GitCommandError, RuntimeError) as e:
                     self._notify_error(e)
-        self.push_screen(VentanaConfirmarStashPop(), p)
+        self.push_screen(confirmar_stash_pop(), p)
 
     def action_ver_diff(self) -> None:
         focused = self.focused
@@ -91,7 +91,7 @@ class MixinChangeActions:
                         except (GitCommandError, RuntimeError) as e:
                             self._notify_error(e)
                 self.push_screen(VentanaAmend(), p)
-        self.push_screen(VentanaConfirmarAmend(), confirmar)
+        self.push_screen(confirmar_amend(), confirmar)
 
     def action_ver_gitignore(self) -> None:
         try:
@@ -142,7 +142,7 @@ class MixinChangeActions:
                     self.actualizar_status()
                 except (GitCommandError, RuntimeError) as e:
                     self._notify_error(e)
-        self.push_screen(VentanaConfirmarDescarte(ruta), confirmar)
+        self.push_screen(confirmar_descarte(ruta), confirmar)
 
     def action_stage_hunk(self) -> None:
         focused = self.focused
