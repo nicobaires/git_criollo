@@ -9,7 +9,7 @@ class MixinSyncActions:
         try:
             self.git.pull()
             self.notify("\u00a1Pull OK!")
-            self.actualizar_pantalla_completa()
+            self.call_from_thread(self.actualizar_pantalla_completa)
         except (GitCommandError, RuntimeError) as e:
             self._notify_error(e)
 
@@ -20,7 +20,7 @@ class MixinSyncActions:
             active_branch = self.git.get_branches().active
             self.git.push(active_branch)
             self.notify("\u00a1Push OK!")
-            self.actualizar_pantalla_completa()
+            self.call_from_thread(self.actualizar_pantalla_completa)
         except (GitCommandError, RuntimeError) as e:
             self._notify_error(e)
 
@@ -30,6 +30,6 @@ class MixinSyncActions:
         try:
             self.git.fetch()
             self.notify("\u00a1Fetch OK!")
-            self.actualizar_pantalla_completa()
+            self.call_from_thread(self.actualizar_pantalla_completa)
         except (GitCommandError, RuntimeError) as e:
             self._notify_error(e)

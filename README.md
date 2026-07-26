@@ -74,7 +74,7 @@ Presioná `?` dentro de la aplicación para ver la ayuda completa.
 | `w` | Commit | Crear un commit |
 | `e` | Amend | Modificar el mensaje del último commit |
 | `v` | Ver Diff | Mostrar diff del archivo seleccionado |
-| `p` | Stage Hunk | Stagear hunks individuales del archivo modificado |
+| `H` | Stage Hunk | Stagear hunks individuales del archivo modificado |
 | `C` | Cambios sin commit | Pantalla completa con lista de archivos + diff coloreado |
 | `Tab` | Ciclo foco | Navegar entre paneles |
 | `i` | Ver .gitignore | Mostrar el contenido del .gitignore |
@@ -100,7 +100,7 @@ Presioná `?` dentro de la aplicación para ver la ayuda completa.
 ## Características
 
 - **Ramas**: crear, checkout, borrar (con confirmación), merge, ver ramas locales y remotas con ahead/behind
-- **Cambios**: stage/unstage por archivo o global, **interactive staging** (`p`: stagear hunks individuales), diff coloreado con word-diff (verde/rojo para líneas + fondos para palabras +/-, azul para @@), commit, amend, stash push/pop. Pantalla completa con `C`: lista de archivos con contador, diff navegable por flechas, stage/unstage con Enter. Gestión de `.gitignore`: ver (`i`) y agregar untracked (`I`).
+- **Cambios**: stage/unstage por archivo o global, **interactive staging** (`H`: stagear hunks individuales), diff coloreado con word-diff (verde/rojo para líneas + fondos para palabras +/-, azul para @@), commit, amend, stash push/pop. Pantalla completa con `C`: lista de archivos con contador, diff navegable por flechas, stage/unstage con Enter. Gestión de `.gitignore`: ver (`i`) y agregar untracked (`I`).
 - **Historial**: lista paginada de commits con detalle, **rebase interactivo** (`R`: pick/reword/squash/fixup/drop), log gráfico (`git log --graph --oneline --all`), detalle completo con Enter: metadatos (autor/committer/fechas), lista de archivos con ± líneas (scrolleable), diff coloreado con proporciones adaptativas
 - **Tags**: crear y borrar tags desde la interfaz
 - **Resolución de conflictos**: (`M`) resolver conflictos de merge eligiendo ours/theirs/both por cada región

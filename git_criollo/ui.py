@@ -44,7 +44,7 @@ class GitCriolloApp(
         ("y", "cherry_pick", "Cherry"),
         ("f5", "refresh", "Refrescar"),
         ("r", "comando_personalizado", "Cmd"),
-        ("p", "stage_hunk", "Stage Hunk"),
+        ("H", "stage_hunk", "Stage Hunk"),
         ("R", "rebase", "Rebase"),
         ("M", "resolver_conflictos", "Merge"),
         ("i", "ver_gitignore", ".gitignore"),
@@ -76,7 +76,7 @@ class GitCriolloApp(
                 Label("", id="info_rama"),
                 Label(
                     "[dim][[n]] Rama  [[c]] Checkout  [[d]] Borrar  [[m]] Merge  "
-                    "[[C]] Cambios  [[p]] Hunk  [[x]] Descartar  [[i]] .gitignore  [[?]] Ayuda[/dim]",
+                    "[[C]] Cambios  [[H]] Hunk  [[x]] Descartar  [[i]] .gitignore  [[?]] Ayuda[/dim]",
                     id="atajos_help"
                 ),
                 classes="columna"

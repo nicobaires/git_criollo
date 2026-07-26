@@ -18,7 +18,7 @@ class VentanaUncommitted(ModalScreen):
         ("v", "ver_diff", "Ver Diff"),
         ("a", "stage_all", "Stage All"),
         ("w", "commit_cambios", "Commit"),
-        ("p", "stage_hunk", "Stage Hunk"),
+        ("H", "stage_hunk", "Stage Hunk"),
         ("x", "descartar_cambios", "Descartar"),
         ("i", "agregar_gitignore", "Ignore"),
     ]
@@ -43,7 +43,7 @@ class VentanaUncommitted(ModalScreen):
                 Vertical(
                     Label("[bold]Archivos[/] (Enter: stage/unstage)", id="uc_title"),
                     ListView(id="uc_file_list"),
-                    Label("[dim][[a]] Stage All  [[w]] Commit  [[v]] Ver Diff  [[p]] Hunk  [[x]] Descartar  [[i]] Ignore  [[q]] Cerrar[/dim]", id="uc_actions"),
+                    Label("[dim][[a]] Stage All  [[w]] Commit  [[v]] Ver Diff  [[H]] Hunk  [[x]] Descartar  [[i]] Ignore  [[q]] Cerrar[/dim]", id="uc_actions"),
                     id="uc_files",
                 ),
                 Vertical(

@@ -8,13 +8,7 @@ from git_criollo.models import (
     BranchInfo, CommitInfo, CommitDetail, DiffHunk, ConflictRegion, StatusInfo,
 )
 
-
-os.makedirs(os.path.expanduser("~/.gitcriollo"), exist_ok=True)
-logging.basicConfig(
-    filename=os.path.expanduser("~/.gitcriollo/debug.log"),
-    level=logging.DEBUG,
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logger = logging.getLogger(__name__)
 
 
 class GitService:
@@ -36,7 +30,7 @@ class GitService:
                 for ref in r.refs:
                     remotes.append(f"{r.name}/{ref.remote_head}")
         except Exception as e:
-            logging.warning(f"Error obteniendo remotes: {e}")
+            logger.warning(f"Error obteniendo remotes: {e}")
 
         tags = [t.name for t in self.repo.tags]
 
@@ -52,7 +46,7 @@ class GitService:
                         ahead[head.name] = a
                         behind[head.name] = b
         except Exception as e:
-            logging.warning(f"Error calculando ahead/behind: {e}")
+            logger.warning(f"Error calculando ahead/behind: {e}")
 
         return BranchInfo(
             active=active,
@@ -70,10 +64,10 @@ class GitService:
                                        "--skip", str(skip), "-n", str(n))
             return [line.rstrip() for line in result.split("\n") if line.strip()]
         except GitCommandError as e:
-            logging.warning(f"Error en get_graph_log: {e}")
+            logger.warning(f"Error en get_graph_log: {e}")
             return []
         except Exception as e:
-            logging.exception(f"Error inesperado en get_graph_log: {e}")
+            logger.exception(f"Error inesperado en get_graph_log: {e}")
             return []
 
     def get_commits(self, skip: int = 0, n: int = 20) -> list[CommitInfo]:
@@ -87,7 +81,7 @@ class GitService:
                 for c in self.repo.iter_commits(max_count=n, skip=skip)
             ]
         except Exception as e:
-            logging.exception(f"Error obteniendo commits: {e}")
+            logger.exception(f"Error obteniendo commits: {e}")
             return []
 
     def get_commit_detail(self, sha: str) -> CommitDetail:
@@ -116,16 +110,16 @@ class GitService:
                 info.staged = [item.a_path for item in self.repo.index.diff("HEAD")]
             except BadName:
                 info.is_empty_repo = True
-                logging.debug("Repo vacío detectado (BadName en diff HEAD)")
+                logger.debug("Repo vacío detectado (BadName en diff HEAD)")
             except InvalidGitRepositoryError as e:
-                logging.error(f"Repo inválido: {e}")
+                logger.error(f"Repo inválido: {e}")
                 raise
             except Exception as e:
-                logging.exception(f"Error inesperado en staged diff: {e}")
+                logger.exception(f"Error inesperado en staged diff: {e}")
             info.unstaged = [item.a_path for item in self.repo.index.diff(None)]
             info.untracked = list(self.repo.untracked_files)
         except Exception as e:
-            logging.exception(f"Error crítico en get_status: {e}")
+            logger.exception(f"Error crítico en get_status: {e}")
         return info
 
     def get_diff(self, path: str, staged: bool = False) -> str:
@@ -137,7 +131,7 @@ class GitService:
                 result = self.repo.git.diff("--no-index", os.devnull, path, "--word-diff")
             return result or "(sin cambios)"
         except Exception as e:
-            logging.exception(f"Error obteniendo diff para {path}: {e}")
+            logger.exception(f"Error obteniendo diff para {path}: {e}")
             return f"Error al obtener diff: {e}"
 
     def create_branch(self, name: str) -> None:
@@ -176,10 +170,10 @@ class GitService:
             remote = self.repo.remote()
             remote.pull()
         except ValueError as e:
-            logging.error(f"No hay remote por defecto configurado: {e}")
+            logger.error(f"No hay remote por defecto configurado: {e}")
             raise RuntimeError("No hay remote por defecto configurado. Usá 'git remote add' primero.") from e
         except GitCommandError as e:
-            logging.exception(f"Error en pull: {e}")
+            logger.exception(f"Error en pull: {e}")
             raise
 
     def push(self, branch: str) -> None:
@@ -187,10 +181,10 @@ class GitService:
             remote = self.repo.remote()
             remote.push(branch)
         except ValueError as e:
-            logging.error(f"No hay remote por defecto configurado: {e}")
+            logger.error(f"No hay remote por defecto configurado: {e}")
             raise RuntimeError("No hay remote por defecto configurado.") from e
         except GitCommandError as e:
-            logging.exception(f"Error en push: {e}")
+            logger.exception(f"Error en push: {e}")
             raise
 
     def fetch(self) -> None:
@@ -198,10 +192,10 @@ class GitService:
             remote = self.repo.remote()
             remote.fetch()
         except ValueError as e:
-            logging.error(f"No hay remote por defecto: {e}")
+            logger.error(f"No hay remote por defecto: {e}")
             raise RuntimeError("No hay remote por defecto configurado.") from e
         except GitCommandError as e:
-            logging.exception(f"Error en fetch: {e}")
+            logger.exception(f"Error en fetch: {e}")
             raise
 
     def merge(self, branch: str) -> None:
@@ -224,7 +218,7 @@ class GitService:
             result = self.repo.git.stash("list")
             return [line for line in result.split("\n") if line.strip()]
         except Exception as e:
-            logging.exception(f"Error listando stashes: {e}")
+            logger.exception(f"Error listando stashes: {e}")
             return []
 
     def get_tags(self) -> list[str]:
@@ -246,7 +240,7 @@ class GitService:
         except ValueError as e:
             return f"Error: comando inválido - {e}"
 
-        dangerous = {";", "&&", "||", "|", "`", "$", "(", ")"}
+        dangerous = {";", "&&", "||", "|", "`", "$", "(", ")", ">", "<"}
         for arg in args:
             for char in dangerous:
                 if char in arg:
@@ -256,21 +250,21 @@ class GitService:
             result = self.repo.git.execute(args)
             return result
         except Exception as e:
-            logging.exception(f"Error ejecutando comando: {cmd}")
+            logger.exception(f"Error ejecutando comando: {cmd}")
             return f"Error: {e}"
 
     def get_working_diff(self) -> str:
         try:
             return self.repo.git.diff(None, "--word-diff") or "(sin cambios)"
         except Exception as e:
-            logging.exception(f"Error en working diff: {e}")
+            logger.exception(f"Error en working diff: {e}")
             return "(sin cambios)"
 
     def get_staged_diff(self) -> str:
         try:
             return self.repo.git.diff("--cached", "--word-diff") or "(sin cambios)"
         except Exception as e:
-            logging.exception(f"Error en staged diff: {e}")
+            logger.exception(f"Error en staged diff: {e}")
             return "(sin cambios)"
 
     def parse_diff_hunks(self, path: str) -> list[DiffHunk]:
@@ -320,14 +314,14 @@ class GitService:
         try:
             self.repo.git.apply("--cached", patch_path)
         except GitCommandError as e:
-            logging.exception(f"Error aplicando hunk en {path}: {e}")
+            logger.exception(f"Error aplicando hunk en {path}: {e}")
             os.unlink(patch_path)
             raise RuntimeError(
                 f"No se pudo aplicar el hunk. Probablemente las líneas de contexto no coinciden. "
                 f"Error: {e.stderr or str(e)}"
             ) from e
         except Exception as e:
-            logging.exception(f"Error inesperado aplicando hunk: {e}")
+            logger.exception(f"Error inesperado aplicando hunk: {e}")
             os.unlink(patch_path)
             raise
         finally:
@@ -352,7 +346,7 @@ class GitService:
                     author=c.author.name,
                 ))
         except Exception as e:
-            logging.exception(f"Error obteniendo commits para rebase: {e}")
+            logger.exception(f"Error obteniendo commits para rebase: {e}")
         return commits
 
     def get_parent_sha(self, sha: str) -> str | None:
@@ -361,7 +355,7 @@ class GitService:
             if commit.parents:
                 return commit.parents[0].hexsha
         except Exception as e:
-            logging.exception(f"Error obteniendo parent de {sha}: {e}")
+            logger.exception(f"Error obteniendo parent de {sha}: {e}")
         return None
 
     def run_rebase(self, base_sha: str, todos: list[tuple[str, str]]) -> None:
@@ -370,25 +364,29 @@ class GitService:
         with tempfile.NamedTemporaryFile(mode='w', suffix='.todo', delete=False) as f:
             f.write(todo_content)
             todo_path = f.name
+        quoted_path = shlex.quote(todo_path)
+        editor_script = f"#!/bin/sh\ncp {quoted_path} \"$1\""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as f:
+            f.write(editor_script)
+            editor_path = f.name
+        os.chmod(editor_path, 0o755)
         try:
-            #self.repo.git.execute(
-                #["git", "rebase", "-i", base_sha],
-                #env={**os.environ, "GIT_SEQUENCE_EDITOR": f"cp {todo_path}"},
             self.repo.git.execute(
                 ["git", "rebase", "-i", base_sha],
-                env={**os.environ, "GIT_SEQUENCE_EDITOR": f'cp "{todo_path}"'},
+                env={**os.environ, "GIT_SEQUENCE_EDITOR": editor_path},
             )
         except Exception as e:
-            logging.exception(f"Error en rebase interactivo: {e}")
+            logger.exception(f"Error en rebase interactivo: {e}")
             raise
         finally:
             os.unlink(todo_path)
+            os.unlink(editor_path)
 
     def is_merge_in_progress(self) -> bool:
         try:
             return os.path.exists(os.path.join(self.repo.working_tree_dir, ".git", "MERGE_HEAD"))
         except Exception as e:
-            logging.warning(f"Error verificando merge: {e}")
+            logger.warning(f"Error verificando merge: {e}")
             return False
 
     def get_conflicted_files(self) -> list[str]:
@@ -396,7 +394,7 @@ class GitService:
             result = self.repo.git.diff("--name-only", "--diff-filter=U")
             return [f for f in result.split("\n") if f.strip()]
         except Exception as e:
-            logging.exception(f"Error obteniendo archivos en conflicto: {e}")
+            logger.exception(f"Error obteniendo archivos en conflicto: {e}")
             return []
 
     def get_conflict_regions(self, path: str) -> list[ConflictRegion]:
@@ -405,7 +403,7 @@ class GitService:
             with open(full_path) as f:
                 content = f.read()
         except Exception as e:
-            logging.warning(f"Error leyendo {path} para conflictos: {e}")
+            logger.warning(f"Error leyendo {path} para conflictos: {e}")
             return []
         lines = content.split("\n")
         regions = []
@@ -440,7 +438,9 @@ class GitService:
     def resolve_conflict_region(self, path: str, region: ConflictRegion, choice: str) -> None:
         full_path = os.path.join(self.repo.working_tree_dir, path)
         with open(full_path) as f:
-            lines = f.read().split("\n")
+            original = f.read()
+        had_trailing_newline = original.endswith("\n")
+        lines = original.split("\n")
         if choice == "ours":
             replacement = region.ours.split("\n")
         elif choice == "theirs":
@@ -450,8 +450,11 @@ class GitService:
         else:
             raise ValueError(f"Opción de resolución inválida: {choice}")
         new_lines = lines[:region.start] + replacement + lines[region.end + 1:]
+        result = "\n".join(new_lines)
+        if had_trailing_newline and not result.endswith("\n"):
+            result += "\n"
         with open(full_path, "w") as f:
-            f.write("\n".join(new_lines))
+            f.write(result)
 
     def add_to_gitignore(self, pattern: str) -> None:
         gitignore_path = os.path.join(self.repo.working_tree_dir, ".gitignore")

@@ -1,5 +1,5 @@
 [project]
-name = "git-criollo"
+name = "git_criollo"
 version = "0.1.0"
 description = "TUI para Git con interfaz limpieza"
 readme = "README.md"
