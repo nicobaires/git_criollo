@@ -11,6 +11,7 @@ from git_criollo.error_utils import notify_error as _notify_error_base
 from git_criollo.ayuda import VentanaAyuda
 from git_criollo.styles import CSS
 from git_criollo.ventanas import VentanaComando, VentanaResultado, VentanaConfirmarBorradoTag
+from git_criollo.ventanas.confirm import VentanaConfirmarSalir
 from git_criollo.ui_actions_branches import MixinBranchActions
 from git_criollo.ui_actions_sync import MixinSyncActions
 from git_criollo.ui_actions_changes import MixinChangeActions
@@ -303,3 +304,9 @@ class GitCriolloApp(
     def action_refresh(self) -> None:
         self.actualizar_pantalla_completa()
         self.notify("Pantalla actualizada.", severity="information", timeout=1)
+
+    def action_quit(self) -> None:
+        def confirmar(b: bool | None):
+            if b:
+                self.exit()
+        self.push_screen(VentanaConfirmarSalir(), confirmar)

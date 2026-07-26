@@ -6,6 +6,7 @@ from git import GitCommandError
 from git_criollo.ventanas import (
     VentanaDetalleCommit, VentanaCherryPick, VentanaRebase, VentanaConflictos,
 )
+from git_criollo.ventanas.confirm import VentanaConfirmarCherryPick, VentanaConfirmarRebase
 
 
 class MixinHistoryActions:
@@ -53,12 +54,15 @@ class MixinHistoryActions:
     def action_cherry_pick(self) -> None:
         def p(sha: str | None):
             if sha:
-                try:
-                    self.git.cherry_pick(sha)
-                    self.notify(f"Cherry-pick de {sha} aplicado.")
-                    self.actualizar_pantalla_completa()
-                except (GitCommandError, RuntimeError) as e:
-                    self._notify_error(e)
+                def confirmar(b: bool | None):
+                    if b:
+                        try:
+                            self.git.cherry_pick(sha)
+                            self.notify(f"Cherry-pick de {sha} aplicado.")
+                            self.actualizar_pantalla_completa()
+                        except (GitCommandError, RuntimeError) as e:
+                            self._notify_error(e)
+                self.push_screen(VentanaConfirmarCherryPick(sha), confirmar)
         self.push_screen(VentanaCherryPick(), p)
 
     def action_rebase(self) -> None:
@@ -78,13 +82,16 @@ class MixinHistoryActions:
 
         def ejecutar(todos):
             if todos:
-                try:
-                    base_sha = self.git.get_parent_sha(sha)
-                    self.git.run_rebase(base_sha, todos)
-                    self.notify("Rebase completado.")
-                    self.actualizar_pantalla_completa()
-                except (GitCommandError, RuntimeError) as e:
-                    self._notify_error(e)
+                def confirmar(b: bool | None):
+                    if b:
+                        try:
+                            base_sha = self.git.get_parent_sha(sha)
+                            self.git.run_rebase(base_sha, todos)
+                            self.notify("Rebase completado.")
+                            self.actualizar_pantalla_completa()
+                        except (GitCommandError, RuntimeError) as e:
+                            self._notify_error(e)
+                self.push_screen(VentanaConfirmarRebase(), confirmar)
         self.push_screen(VentanaRebase(commits), ejecutar)
 
     def action_resolver_conflictos(self) -> None:

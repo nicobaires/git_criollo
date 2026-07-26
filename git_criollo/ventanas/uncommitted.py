@@ -9,6 +9,7 @@ from git_criollo.error_utils import notify_error as _error_base
 from git_criollo.ventanas.viewer import VentanaDiff
 from git_criollo.ventanas.input import VentanaCommit
 from git_criollo.ventanas.interactive import VentanaStageHunk
+from git_criollo.ventanas.confirm import VentanaConfirmarDescarte, VentanaConfirmarStashPop
 
 
 class VentanaUncommitted(ModalScreen):
@@ -214,12 +215,16 @@ class VentanaUncommitted(ModalScreen):
         ruta = getattr(item, "archivo_ruta", None)
         if not ruta:
             return
-        try:
-            self.git.discard_changes(ruta)
-            self.notify(f"Cambios descartados: {ruta}")
-            self._refrescar()
-        except (GitCommandError, RuntimeError) as e:
-            self._notify_error(e)
+
+        def confirmar(b: bool | None):
+            if b:
+                try:
+                    self.git.discard_changes(ruta)
+                    self.notify(f"Cambios descartados: {ruta}")
+                    self._refrescar()
+                except (GitCommandError, RuntimeError) as e:
+                    self._notify_error(e)
+        self.app.push_screen(VentanaConfirmarDescarte(ruta), confirmar)
 
     def action_agregar_gitignore(self) -> None:
         lista = self.query_one("#uc_file_list", ListView)

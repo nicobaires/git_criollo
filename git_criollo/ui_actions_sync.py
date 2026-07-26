@@ -1,6 +1,8 @@
 from textual import work
 from git import GitCommandError
 
+from git_criollo.ventanas.confirm import VentanaConfirmarPush
+
 
 class MixinSyncActions:
     @work(thread=True)
@@ -13,12 +15,19 @@ class MixinSyncActions:
         except (GitCommandError, RuntimeError) as e:
             self._notify_error(e)
 
-    @work(thread=True)
     def action_push_rama(self) -> None:
+        active_branch = self.git.get_branches().active
+
+        def confirmar(b: bool | None):
+            if b:
+                self._ejecutar_push(active_branch)
+        self.push_screen(VentanaConfirmarPush(active_branch), confirmar)
+
+    @work(thread=True)
+    def _ejecutar_push(self, branch: str) -> None:
         self.notify("Git push...")
         try:
-            active_branch = self.git.get_branches().active
-            self.git.push(active_branch)
+            self.git.push(branch)
             self.notify("\u00a1Push OK!")
             self.call_from_thread(self.actualizar_pantalla_completa)
         except (GitCommandError, RuntimeError) as e:

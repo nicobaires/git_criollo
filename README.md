@@ -100,13 +100,15 @@ Presioná `?` dentro de la aplicación para ver la ayuda completa.
 ## Características
 
 - **Ramas**: crear, checkout, borrar (con confirmación), merge, ver ramas locales y remotas con ahead/behind
-- **Cambios**: stage/unstage por archivo o global, **interactive staging** (`H`: stagear hunks individuales), diff coloreado con word-diff (verde/rojo para líneas + fondos para palabras +/-, azul para @@), commit, amend, stash push/pop. Pantalla completa con `C`: lista de archivos con contador, diff navegable por flechas, stage/unstage con Enter. Gestión de `.gitignore`: ver (`i`) y agregar untracked (`I`).
-- **Historial**: lista paginada de commits con detalle, **rebase interactivo** (`R`: pick/reword/squash/fixup/drop), log gráfico (`git log --graph --oneline --all`), detalle completo con Enter: metadatos (autor/committer/fechas), lista de archivos con ± líneas (scrolleable), diff coloreado con proporciones adaptativas
+- **Cambios**: stage/unstage por archivo o global, **interactive staging** (`H`: stagear hunks individuales), diff coloreado con word-diff (verde/rojo para líneas + fondos para palabras +/-, azul para @@), commit, amend (con confirmación), stash push/pop (pop con confirmación). Pantalla completa con `C`: lista de archivos con contador, diff navegable por flechas, stage/unstage con Enter. Gestión de `.gitignore`: ver (`i`) y agregar untracked (`I`). **Descartar cambios** (`x`) con confirmación irreversible.
+- **Historial**: lista paginada de commits con detalle interactivo (columna archivos + diff por archivo), **rebase interactivo** (`R`: pick/reword/squash/fixup/drop, con confirmación), log gráfico (`git log --graph --oneline --all`), detalle con Enter: committer/fecha, archivos con ± líneas, diff coloreado por archivo, ramas del commit
 - **Tags**: crear y borrar tags desde la interfaz
 - **Resolución de conflictos**: (`M`) resolver conflictos de merge eligiendo ours/theirs/both por cada región
-- **Cherry-pick**: aplicar commits de otras ramas por SHA
+- **Cherry-pick**: aplicar commits de otras ramas por SHA (con confirmación)
 - **Comandos personalizados**: ejecutar cualquier comando git y ver el resultado
+- **Sincronización**: pull, push (con confirmación), fetch
 - **Refresh manual**: presioná `F5` para actualizar la interfaz (sin auto-refresh)
+- **Confirmaciones**: acciones destructivas (borrar rama, descartar cambios, push, amend, rebase, cherry-pick, stash pop, salir) piden confirmación antes de ejecutar
 - **Navegación**: Tab para ciclar el foco entre paneles (el borde del panel activo cambia de color), mini-help visible siempre en la columna izquierda, ayuda completa con `?`, pantalla de cambios sin commit con `C`
 - **HEAD detached**: se muestra una advertencia visible en el header
 
@@ -130,7 +132,7 @@ git_criollo/
 ├── ventanas/
 │   ├── __init__.py          # re-exports todas las ventanas
 │   ├── input.py             # 7 input dialogs
-│   ├── confirm.py           # 3 confirmation dialogs
+│   ├── confirm.py           # 10 confirmation dialogs
 │   ├── viewer.py            # 3 viewer dialogs
 │   ├── interactive.py       # StageHunk, Rebase, Conflictos
 │   └── uncommitted.py       # VentanaUncommitted
