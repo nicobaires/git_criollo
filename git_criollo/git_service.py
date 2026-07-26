@@ -103,6 +103,13 @@ class GitService:
             diff=diff,
         )
 
+    def get_commit_file_diff(self, sha: str, path: str) -> str:
+        try:
+            return self.repo.git.show(sha, "--", path) or "(sin cambios)"
+        except Exception as e:
+            logger.exception(f"Error obteniendo diff de {path} en {sha}: {e}")
+            return f"Error: {e}"
+
     def get_status(self) -> StatusInfo:
         info = StatusInfo()
         try:
