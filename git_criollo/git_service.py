@@ -92,6 +92,7 @@ class GitService:
             (path, s["insertions"], s["deletions"])
             for path, s in stats.items()
         )
+        branches = self.get_commit_branches(commit.hexsha)
         return CommitDetail(
             hash=sha[:7],
             author=f"{commit.author.name} <{commit.author.email}>",
@@ -101,7 +102,16 @@ class GitService:
             message=commit.message.strip(),
             files=files,
             diff=diff,
+            branches=branches,
         )
+
+    def get_commit_branches(self, sha: str) -> list[str]:
+        try:
+            result = self.repo.git.branch("--contains", sha)
+            return [line.strip().lstrip("* ") for line in result.split("\n") if line.strip()]
+        except Exception as e:
+            logger.exception(f"Error obteniendo ramas de {sha}: {e}")
+            return []
 
     def get_commit_file_diff(self, sha: str, path: str) -> str:
         try:

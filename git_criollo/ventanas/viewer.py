@@ -69,7 +69,8 @@ class VentanaDetalleCommit(BaseModalScreen):
         yield Vertical(
             Horizontal(
                 Vertical(
-                    Label(f"[bold #00afff]Commit: {escape(detail.hash)}[/]"),
+                    Label(f"[bold #00afff]Commit: {escape(detail.hash)}[/]"
+                          + (f"  [dim]({', '.join(detail.branches)})[/]" if detail.branches else "")),
                     Vertical(
                         Label(f"[bold #87d7ff]{escape(detail.committer)}[/]"),
                         Label(f"[bold #87d7ff]{escape(detail.committer_date)}"),

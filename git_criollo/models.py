@@ -29,6 +29,7 @@ class CommitDetail:
     message: str
     files: list[tuple[str, int, int]]
     diff: str
+    branches: list[str] = field(default_factory=list)
 
 
 @dataclass
