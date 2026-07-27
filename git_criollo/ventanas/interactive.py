@@ -145,9 +145,9 @@ class VentanaRebase(ModalScreen[list[tuple[str, str]] | None]):
         )
 
     def on_mount(self) -> None:
-        self.call_after_refresh(self._render)
+        self.call_after_refresh(self._render_rebase)
 
-    def _render(self) -> None:
+    def _render_rebase(self) -> None:
         lista = self.query_one("#rebase_list", ListView)
         if lista.children:
             lista.clear()
@@ -165,7 +165,7 @@ class VentanaRebase(ModalScreen[list[tuple[str, str]] | None]):
         child = lista.highlighted_child
         if child and hasattr(child, "idx"):
             self.actions[child.idx] = action
-            self._render()
+            self._render_rebase()
             lista.index = child.idx
 
     def action_pick(self) -> None:
