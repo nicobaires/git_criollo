@@ -74,7 +74,7 @@ Presioná `?` dentro de la aplicación para ver la ayuda completa.
 | `w` | Commit | Crear un commit |
 | `e` | Amend | Modificar el mensaje del último commit |
 | `v` | Ver Diff | Mostrar diff del archivo seleccionado |
-| `H` | Stage Hunk | Stagear hunks individuales del archivo modificado |
+| `H` | Stage Hunk | Stagear hunks individuales (dentro del modal: `p` anterior, `n` siguiente) |
 | `C` | Cambios sin commit | Pantalla completa con lista de archivos + diff coloreado |
 | `Tab` | Ciclo foco | Navegar entre paneles |
 | `i` | Ver .gitignore | Mostrar el contenido del .gitignore |
@@ -122,6 +122,7 @@ git_criollo/
 ├── git_service.py           # lógica Git (GitService) — sin Textual
 ├── diff_utils.py            # formateo de diff con word-diff coloreado
 ├── error_utils.py           # función notify_error() compartida
+├── helpers.py               # utilidades: git_action(), render_commit_list(), etc.
 ├── styles.py                # CSS de la app principal
 ├── ayuda.py                 # pantalla de ayuda (VentanaAyuda)
 ├── ui.py                    # App principal (~300 lines)
@@ -131,8 +132,8 @@ git_criollo/
 ├── ui_actions_history.py    # mixin: log/rebase/cherry-pick actions
 ├── ventanas/
 │   ├── __init__.py          # re-exports todas las ventanas
-│   ├── input.py             # 7 input dialogs
-│   ├── confirm.py           # 10 confirmation dialogs
+│   ├── input.py             # VentanaInput genérica + 7 presets
+│   ├── confirm.py           # VentanaConfirmar genérica + 10 presets
 │   ├── viewer.py            # 3 viewer dialogs
 │   ├── interactive.py       # StageHunk, Rebase, Conflictos
 │   └── uncommitted.py       # VentanaUncommitted
@@ -147,6 +148,7 @@ tests/
 - `git_service.py` — cero imports de Textual. `GitService` usa modelos de `models.py`. Testeable sin terminal.
 - `diff_utils.py` — función `_diff_coloreado()` pura, sin imports de Textual.
 - `error_utils.py` — función `notify_error()` compartida entre `ui.py` y `ventanas/`.
+- `helpers.py` — utilidades compartidas: `git_action()` decorator, `render_commit_list()`, `render_status_lists()`, `get_highlighted_attr()`.
 - `styles.py` — CSS de la app principal.
 - `ui.py` — `GitCriolloApp` hereda de 4 mixins + `App`. Cero imports de `GitPython`.
 - `ui_actions_*.py` — mixins de acciones por dominio (ramas, sync, cambios, historial).

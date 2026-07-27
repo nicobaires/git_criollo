@@ -21,7 +21,7 @@ SECCIONES = [
         ("w", "Commit:", "Abrir modal para escribir mensaje y confirmar (git commit)."),
         ("e", "Amend:", "Modificar el mensaje del último commit (git commit --amend)."),
         ("v", "Ver Diff:", "Mostrar el diff del archivo seleccionado en el panel de estado."),
-        ("H", "Stage Hunk:", "Stagear hunks individuales del archivo modificado seleccionado."),
+        ("H", "Stage Hunk:", "Stagear hunks individuales del archivo modificado. Flechas o `p`/`n` para navegar hunks."),
         ("C", "Cambios sin commit:", "Abrir pantalla completa con lista de archivos y diff coloreado. Enter stage/unstage, flechas cambian el diff."),
         ("Tab", "Ciclo foco:", "Navegar entre Ramas → Staged → Unstaged → Historial."),
         ("i", "Ver .gitignore:", "Abrir el archivo .gitignore en un modal de lectura."),

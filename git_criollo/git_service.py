@@ -310,25 +310,34 @@ class GitService:
 
     def stage_hunk(self, path: str, hunk: DiffHunk) -> None:
         raw_diff = self.repo.git.diff(None, "--unified=3", "--", path)
-        header_part = raw_diff.split("\n@@")[0] + "\n"
+        if not raw_diff:
+            raise RuntimeError("No hay diff para este archivo.")
+
+        lines = raw_diff.splitlines(keepends=True)
+        header_end = 0
+        for i, line in enumerate(lines):
+            if line.startswith("@@"):
+                header_end = i
+                break
+        else:
+            raise RuntimeError("No se encontró header de hunk en el diff.")
+
+        header_part = "".join(lines[:header_end])
         patch = header_part + hunk.raw + "\n"
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.patch', delete=False) as f:
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".patch", delete=False) as f:
             f.write(patch)
-            f.flush()
             patch_path = f.name
+
         try:
             self.repo.git.apply("--cached", patch_path)
         except GitCommandError as e:
             logger.exception(f"Error aplicando hunk en {path}: {e}")
-            os.unlink(patch_path)
             raise RuntimeError(
-                f"No se pudo aplicar el hunk. Probablemente las líneas de contexto no coinciden. "
-                f"Error: {e.stderr or str(e)}"
+                "No se pudo aplicar el hunk. "
+                "Las líneas de contexto probablemente cambiaron. "
+                f"Detalle: {e.stderr or str(e)}"
             ) from e
-        except Exception as e:
-            logger.exception(f"Error inesperado aplicando hunk: {e}")
-            os.unlink(patch_path)
-            raise
         finally:
             if os.path.exists(patch_path):
                 os.unlink(patch_path)

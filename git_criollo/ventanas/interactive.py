@@ -21,6 +21,7 @@ class VentanaStageHunk(ModalScreen[bool]):
         ("q", "quit", "Cancelar"),
         ("y", "stage", "Stage"),
         ("n", "skip", "Skip"),
+        ("p", "previous", "Anterior"),
     ]
     CSS = """
     VentanaStageHunk { align: center middle; background: rgba(0,0,0,0.85); }
@@ -30,6 +31,7 @@ class VentanaStageHunk(ModalScreen[bool]):
     #hunk_body Static { background: #1a1a1a; padding: 1; }
     #hunk_footer { height: auto; color: #888; margin-top: 1; }
     """
+
     def __init__(self, path: str, diff_utils_module=None):
         super().__init__()
         self.path = path
@@ -51,12 +53,14 @@ class VentanaStageHunk(ModalScreen[bool]):
 
     def _mostrar_hunk(self) -> None:
         if self._idx >= len(self._hunks):
-            self.notify("No quedan m\u00e1s hunks.", severity="information")
+            self.notify("No quedan más hunks.", severity="information")
             self.dismiss(True)
             return
         hunk = self._hunks[self._idx]
         header = self.query_one("#hunk_header", Label)
-        header.update(f"[bold #00afff]{self.path}[/] \u2014 Hunk {self._idx + 1} de {len(self._hunks)}")
+        header.update(
+            f"[bold #00afff]{self.path}[/] — Hunk {self._idx + 1} de {len(self._hunks)}"
+        )
         body = self.query_one("#hunk_body", ScrollableContainer)
         body.remove_children()
         body.mount(Static(_diff_coloreado(hunk.raw), markup=True))
@@ -65,7 +69,10 @@ class VentanaStageHunk(ModalScreen[bool]):
         yield Vertical(
             Label("", id="hunk_header"),
             ScrollableContainer(Static(""), id="hunk_body"),
-            Label("[dim][[y]] Stage  [[n]] Skip  [[q]] Cerrar[/dim]", id="hunk_footer"),
+            Label(
+                "[dim][[y]] Stage  [[n]] Skip  [[p]] Anterior  [[q]] Cerrar[/dim]",
+                id="hunk_footer",
+            ),
             id="dialog_hunk",
         )
 
@@ -74,7 +81,10 @@ class VentanaStageHunk(ModalScreen[bool]):
             return
         try:
             self.git.stage_hunk(self.path, self._hunks[self._idx])
+            self.notify(f"Hunk {self._idx + 1} stageado.", timeout=1.5)
+            # Re-parsear: los offsets cambian después de stagear
             self._hunks = self.git.parse_diff_hunks(self.path)
+            # Mantener el mismo índice (ahora apunta al siguiente hunk real)
             self._mostrar_hunk()
         except (GitCommandError, RuntimeError) as e:
             self._notify_error(e)
@@ -84,6 +94,13 @@ class VentanaStageHunk(ModalScreen[bool]):
     def action_skip(self) -> None:
         self._idx += 1
         self._mostrar_hunk()
+
+    def action_previous(self) -> None:
+        if self._idx > 0:
+            self._idx -= 1
+            self._mostrar_hunk()
+        else:
+            self.notify("Ya estás en el primer hunk.", severity="information", timeout=1.5)
 
     def _notify_error(self, e: Exception) -> None:
         _notify_screen_error(self.notify, e)
