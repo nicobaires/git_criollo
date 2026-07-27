@@ -9,7 +9,11 @@ from textual.screen import ModalScreen
 class VentanaConfirmar(ModalScreen[bool]):
     """Diálogo de confirmación genérico y estilizado."""
 
-    BINDINGS = [("escape", "cancel", "Cancelar")]
+    BINDINGS = [
+        ("escape", "cancel", "Cancelar"),
+        ("left", "focus_no", ""),
+        ("right", "focus_si", ""),
+    ]
 
     CSS = """
     VentanaConfirmar {
@@ -21,7 +25,7 @@ class VentanaConfirmar(ModalScreen[bool]):
         background: $surface;
         border: heavy $accent;
         width: 52;
-        min-height: 11;
+        height: auto;
     }
     #dialog_title {
         text-align: center;
@@ -99,6 +103,12 @@ class VentanaConfirmar(ModalScreen[bool]):
 
     def action_cancel(self) -> None:
         self.dismiss(False)
+
+    def action_focus_no(self) -> None:
+        self.query_one("#no", Button).focus()
+
+    def action_focus_si(self) -> None:
+        self.query_one("#si", Button).focus()
 
 
 def confirmar_borrado_rama(nombre: str) -> VentanaConfirmar:
