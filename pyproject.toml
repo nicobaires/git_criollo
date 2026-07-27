@@ -1,9 +1,9 @@
 [project]
 name = "git_criollo"
 version = "0.1.0"
-description = "TUI para Git con interfaz limpieza"
+description = "TUI para Git con interfaz limpia, funcional y en español"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.9"
 dependencies = [
     "gitpython>=3.1.52",
     "textual>=8.2.8",
