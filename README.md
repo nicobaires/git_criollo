@@ -2,13 +2,15 @@
 
 TUI (Terminal User Interface) para Git construida con [Textual](https://textual.textualize.io/) y [GitPython](https://gitpython.readthedocs.io/).
 
+**Funcional, simple, rápido y en español.**
+
 ## Instalación
 
 ### Como herramienta global (recomendado)
 
 ```bash
-git clone https://github.com/tu-usuario/git-criollo
-cd git-criollo
+git clone https://github.com/nicobaires/git_criollo
+cd git_criollo
 uv tool install --editable .
 ```
 
@@ -17,6 +19,7 @@ Después podés ejecutarlo desde cualquier carpeta que sea un repositorio Git:
 ```bash
 gitcriollo
 ```
+
 ### Modo desarrollo
 
 ```bash
@@ -29,7 +32,7 @@ uv add gitpython textual
 uv run pytest tests/
 ```
 
-72 tests que cubren toda la capa de servicio (`git_service.py`), formateo de diffs (`diff_utils.py`) y manejo de errores (`error_utils.py`). Usan repositorios temporales creados con `tmpdir` + `git init`, sin depender de fixtures externos. Ejecutalos con `uv run pytest tests/ -v`.
+72 tests que cubren toda la capa de servicio (`git_service.py`), formateo de diffs (`diff_utils.py`) y manejo de errores (`error_utils.py`). Usan repositorios temporales creados con `tmpdir`.
 
 ### Correcciones incluidas
 
@@ -74,7 +77,7 @@ Presioná `?` dentro de la aplicación para ver la ayuda completa.
 | `w` | Commit | Crear un commit |
 | `e` | Amend | Modificar el mensaje del último commit |
 | `v` | Ver Diff | Mostrar diff del archivo seleccionado |
-| `H` | Stage Hunk | Stagear hunks individuales (dentro del modal: `p` anterior, `n` siguiente) |
+| `H` | Stage Hunk | Stagear hunks individuales del archivo modificado |
 | `C` | Cambios sin commit | Pantalla completa con lista de archivos + diff coloreado |
 | `Tab` | Ciclo foco | Navegar entre paneles |
 | `i` | Ver .gitignore | Mostrar el contenido del .gitignore |
@@ -100,8 +103,8 @@ Presioná `?` dentro de la aplicación para ver la ayuda completa.
 ## Características
 
 - **Ramas**: crear, checkout, borrar (con confirmación), merge, ver ramas locales y remotas con ahead/behind
-- **Cambios**: stage/unstage por archivo o global, **interactive staging** (`H`: stagear hunks individuales), diff coloreado con word-diff (verde/rojo para líneas + fondos para palabras +/-, azul para @@), commit, amend (con confirmación), stash push/pop (pop con confirmación). Pantalla completa con `C`: lista de archivos con contador, diff navegable por flechas, stage/unstage con Enter. Gestión de `.gitignore`: ver (`i`) y agregar untracked (`I`). **Descartar cambios** (`x`) con confirmación irreversible.
-- **Historial**: lista paginada de commits con detalle interactivo (columna archivos + diff por archivo), **rebase interactivo** (`R`: pick/reword/squash/fixup/drop, con confirmación), log gráfico (`git log --graph --oneline --all`), detalle con Enter: committer/fecha, archivos con ± líneas, diff coloreado por archivo, ramas del commit
+- **Cambios**: stage/unstage por archivo o global, **interactive staging** (`H`: stagear hunks individuales), diff coloreado con word-diff (verde/rojo para líneas + fondos para palabras +/-)
+- **Historial**: lista paginada de commits con detalle interactivo (columna archivos + diff por archivo), **rebase interactivo** (`R`: pick/reword/squash/fixup/drop, con confirmación), log gráfico
 - **Tags**: crear y borrar tags desde la interfaz
 - **Resolución de conflictos**: (`M`) resolver conflictos de merge eligiendo ours/theirs/both por cada región
 - **Cherry-pick**: aplicar commits de otras ramas por SHA (con confirmación)
@@ -109,7 +112,7 @@ Presioná `?` dentro de la aplicación para ver la ayuda completa.
 - **Sincronización**: pull, push (con confirmación), fetch
 - **Refresh manual**: presioná `F5` para actualizar la interfaz (sin auto-refresh)
 - **Confirmaciones**: acciones destructivas (borrar rama, descartar cambios, push, amend, rebase, cherry-pick, stash pop, salir) piden confirmación antes de ejecutar
-- **Navegación**: Tab para ciclar el foco entre paneles (el borde del panel activo cambia de color), mini-help visible siempre en la columna izquierda, ayuda completa con `?`, pantalla de cambios sin commit con `C`
+- **Navegación**: Tab para ciclar el foco entre paneles (el borde del panel activo cambia de color), mini-help visible siempre en la columna izquierda, ayuda completa con `?`
 - **HEAD detached**: se muestra una advertencia visible en el header
 
 ## Estructura del proyecto
@@ -122,7 +125,7 @@ git_criollo/
 ├── git_service.py           # lógica Git (GitService) — sin Textual
 ├── diff_utils.py            # formateo de diff con word-diff coloreado
 ├── error_utils.py           # función notify_error() compartida
-├── helpers.py               # utilidades: git_action(), render_commit_list(), etc.
+├── helpers.py               # utilidades: render_commit_list(), etc.
 ├── styles.py                # CSS de la app principal
 ├── ayuda.py                 # pantalla de ayuda (VentanaAyuda)
 ├── ui.py                    # App principal (~300 lines)
@@ -132,25 +135,27 @@ git_criollo/
 ├── ui_actions_history.py    # mixin: log/rebase/cherry-pick actions
 ├── ventanas/
 │   ├── __init__.py          # re-exports todas las ventanas
-│   ├── input.py             # VentanaInput genérica + 7 presets
-│   ├── confirm.py           # VentanaConfirmar genérica + 10 presets
-│   ├── viewer.py            # 3 viewer dialogs
+│   ├── input.py             # diálogos input
+│   ├── confirm.py           # diálogos confirmación
+│   ├── viewer.py            # diálogos visualización
 │   ├── interactive.py       # StageHunk, Rebase, Conflictos
 │   └── uncommitted.py       # VentanaUncommitted
 tests/
 ├── conftest.py              # fixtures: repo temporal
-├── test_diff_utils.py       # _diff_coloreado
-├── test_error_utils.py      # notify_error
-└── test_git_service.py      # 52 tests: todas las operaciones Git
+├── test_diff_utils.py       # tests formateo diff
+├── test_error_utils.py      # tests error handling
+└── test_git_service.py      # 52 tests: operaciones Git
 ```
 
-- `models.py` — dataclasses puras (`BranchInfo`, `CommitInfo`, `CommitDetail`, `DiffHunk`, `ConflictRegion`, `StatusInfo`). Sin dependencias.
-- `git_service.py` — cero imports de Textual. `GitService` usa modelos de `models.py`. Testeable sin terminal.
-- `diff_utils.py` — función `_diff_coloreado()` pura, sin imports de Textual.
-- `error_utils.py` — función `notify_error()` compartida entre `ui.py` y `ventanas/`.
-- `helpers.py` — utilidades compartidas: `git_action()` decorator, `render_commit_list()`, `render_status_lists()`, `get_highlighted_attr()`.
-- `styles.py` — CSS de la app principal.
-- `ui.py` — `GitCriolloApp` hereda de 4 mixins + `App`. Cero imports de `GitPython`.
-- `ui_actions_*.py` — mixins de acciones por dominio (ramas, sync, cambios, historial).
-- `ventanas/` — 5 archivos con `ModalScreen` agrupados por tipo.
-- `ayuda.py` — ventana modal de ayuda con todos los atajos.
+- `models.py` — dataclasses puras sin dependencias
+- `git_service.py` — lógica Git sin imports de Textual (testeable)
+- `diff_utils.py` — funciones puras para formateo de diff
+- `error_utils.py` — utilidades compartidas
+- `ui.py` — App principal (4 mixins + App base)
+- `ui_actions_*.py` — mixins organizados por dominio
+- `ventanas/` — componentes ModalScreen agrupados por tipo
+- `ayuda.py` — pantalla de ayuda con atajos
+
+## Licencia
+
+MIT License. Ver [LICENSE](LICENSE) para detalles.
