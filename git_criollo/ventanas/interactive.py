@@ -145,11 +145,12 @@ class VentanaRebase(ModalScreen[list[tuple[str, str]] | None]):
         )
 
     def on_mount(self) -> None:
-        self._render()
+        self.call_after_refresh(self._render)
 
     def _render(self) -> None:
         lista = self.query_one("#rebase_list", ListView)
-        lista.clear()
+        if lista.children:
+            lista.clear()
         colors = {"pick": "#00ff00", "reword": "#ffaf00", "squash": "#af5fff",
                   "fixup": "#ff5f5f", "drop": "#888888"}
         for i, c in enumerate(self.commits):
