@@ -1,4 +1,5 @@
 import os
+import re
 import tempfile
 import logging
 import shlex
@@ -16,37 +17,55 @@ class GitService:
         self.repo = Repo(path, search_parent_directories=True)
 
     def get_branches(self) -> BranchInfo:
-        is_detached = self.repo.head.is_detached
         try:
-            active = self.repo.active_branch.name
-        except TypeError:
+            with open(os.path.join(self.repo.git_dir, "HEAD")) as f:
+                head_content = f.read().strip()
+            if head_content.startswith("ref: "):
+                is_detached = False
+                active = head_content.removeprefix("ref: refs/heads/")
+            else:
+                is_detached = True
+                active = head_content[:7]
+        except Exception:
+            is_detached = True
             active = self.repo.head.commit.hexsha[:7]
 
-        branches = [b.name for b in self.repo.branches]
-
-        remotes = []
-        try:
-            for r in self.repo.remotes:
-                for ref in r.refs:
-                    remotes.append(f"{r.name}/{ref.remote_head}")
-        except Exception as e:
-            logger.warning(f"Error obteniendo remotes: {e}")
-
-        tags = [t.name for t in self.repo.tags]
-
+        branches: list[str] = []
+        remotes: list[str] = []
+        tags: list[str] = []
         ahead: dict[str, int] = {}
         behind: dict[str, int] = {}
+
         try:
-            for head in self.repo.branches:
-                tracking = head.tracking_branch()
-                if tracking:
-                    a = sum(1 for _ in self.repo.iter_commits(f"{tracking.name}..{head.name}"))
-                    b = sum(1 for _ in self.repo.iter_commits(f"{head.name}..{tracking.name}"))
-                    if a or b:
-                        ahead[head.name] = a
-                        behind[head.name] = b
+            result = self.repo.git.for_each_ref(
+                "--format=%(refname:short)\t%(refname)\t%(upstream:short)\t%(upstream:track)",
+                "refs/heads/", "refs/remotes/", "refs/tags/",
+            )
+            for line in result.splitlines():
+                if not line.strip():
+                    continue
+                parts = line.split("\t")
+                if len(parts) < 2:
+                    continue
+                short_name, full_ref = parts[0], parts[1]
+                upstream = parts[2] if len(parts) > 2 else ""
+                track = parts[3] if len(parts) > 3 else ""
+
+                if full_ref.startswith("refs/heads/"):
+                    branches.append(short_name)
+                    if track:
+                        a_match = re.search(r"ahead (\d+)", track)
+                        b_match = re.search(r"behind (\d+)", track)
+                        if a_match:
+                            ahead[short_name] = int(a_match.group(1))
+                        if b_match:
+                            behind[short_name] = int(b_match.group(1))
+                elif full_ref.startswith("refs/tags/"):
+                    tags.append(short_name)
+                elif full_ref.startswith("refs/remotes/"):
+                    remotes.append(short_name)
         except Exception as e:
-            logger.warning(f"Error calculando ahead/behind: {e}")
+            logger.warning(f"Error obteniendo refs: {e}")
 
         return BranchInfo(
             active=active,

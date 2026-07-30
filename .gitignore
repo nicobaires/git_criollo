@@ -14,3 +14,4 @@ wheels/
 
 # App runtime
 debug.log
+TEST_PLAN.md
