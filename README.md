@@ -14,7 +14,7 @@ cd git_criollo
 uv tool install --editable .
 ```
 
-Después podés ejecutarlo desde cualquier carpeta que sea un repositorio Git:
+Después podés ejecutarlo desde cualquier carpeta. Si no hay un repositorio Git, te ofrece inicializar uno, clonar por URL o salir:
 
 ```bash
 gitcriollo
@@ -54,6 +54,21 @@ La rama `fix/bugs-lote1` aplica 8 grupos de correcciones sobre el código base:
 ```bash
 uv run python -m git_criollo
 ```
+
+Si el directorio actual no es un repositorio Git, la app pregunta por consola antes de iniciar:
+
+```
+No hay un repositorio Git en este directorio.
+[i] Inicializar git init
+[c] Clonar repositorio (URL)
+[q] Salir
+```
+
+- `i` — inicializa `git init` (pedís el nombre del directorio; Enter = directorio actual)
+- `c` — clona un repositorio por URL
+- `q` — sale sin iniciar
+
+Recién después de inicializar/clonar (o si ya había un repo) arranca la interfaz.
 
 ## Atajos
 
@@ -120,7 +135,7 @@ Presioná `?` dentro de la aplicación para ver la ayuda completa.
 ```
 git_criollo/
 ├── __init__.py              # package marker
-├── __main__.py              # entry point (python -m git_criollo)
+├── __main__.py              # entry point: verifica repo / menú init-clone-quit (python -m git_criollo)
 ├── models.py                # dataclasses: BranchInfo, CommitInfo, etc.
 ├── git_service.py           # lógica Git (GitService) — sin Textual
 ├── diff_utils.py            # formateo de diff con word-diff coloreado
