@@ -59,14 +59,18 @@ class GitCriolloApp(
 
     CSS = CSS
 
+    def __init__(self, start_path: str | None = None) -> None:
+        super().__init__()
+        self._start_path = start_path or os.getcwd()
+
     def on_mount(self) -> None:
         try:
-            self.git = GitService(os.getcwd())
+            self.git = GitService(self._start_path)
             self._commit_offset = 0
             self._modo_grafico = False
             self.actualizar_pantalla_completa()
         except (GitCommandError, RuntimeError) as e:
-            self.exit(message=f"Error: No est\u00e1s dentro de un repositorio de Git. ({e})")
+            self.exit(message=f"Error: No estás dentro de un repositorio de Git. ({e})")
         except Exception as e:
             self.exit(message=f"Error inesperado al iniciar: {e}")
 
