@@ -15,3 +15,6 @@ wheels/
 # App runtime
 debug.log
 TEST_PLAN.md
+
+# Personal files
+archivo_personal.md
