@@ -26,7 +26,7 @@ class GitService:
             else:
                 is_detached = True
                 active = head_content[:7]
-        except (FileNotFoundError, IOError, OSError):
+        except OSError:
             is_detached = True
             active = self.repo.head.commit.hexsha[:7]
 
@@ -85,7 +85,7 @@ class GitService:
         except GitCommandError as e:
             logger.warning(f"Error en get_graph_log: {e}")
             return []
-        except (OSError, IOError) as e:
+        except OSError as e:
             logger.exception(f"Error inesperado en get_graph_log: {e}")
             return []
 
@@ -363,7 +363,7 @@ class GitService:
             try:
                 if os.path.exists(patch_path):
                     os.unlink(patch_path)
-            except (OSError, IOError):
+            except OSError:
                 logger.exception("No se pudo eliminar el archivo temporal del parche.")
 
     def get_gitignore_content(self) -> str:
@@ -423,7 +423,7 @@ class GitService:
     def is_merge_in_progress(self) -> bool:
         try:
             return os.path.exists(os.path.join(self.repo.working_tree_dir, ".git", "MERGE_HEAD"))
-        except (AttributeError, OSError):
+        except (AttributeError, OSError) as e:
             logger.warning(f"Error verificando merge: {e}")
             return False
 
@@ -440,7 +440,7 @@ class GitService:
         try:
             with open(full_path) as f:
                 content = f.read()
-        except (FileNotFoundError, IOError, OSError):
+        except OSError as e:
             logger.warning(f"Error leyendo {path} para conflictos: {e}")
             return []
         lines = content.split("\n")
