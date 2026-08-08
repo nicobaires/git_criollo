@@ -26,7 +26,7 @@ class GitService:
             else:
                 is_detached = True
                 active = head_content[:7]
-        except Exception:
+        except (FileNotFoundError, IOError, OSError):
             is_detached = True
             active = self.repo.head.commit.hexsha[:7]
 
@@ -64,7 +64,7 @@ class GitService:
                     tags.append(short_name)
                 elif full_ref.startswith("refs/remotes/"):
                     remotes.append(short_name)
-        except Exception as e:
+        except GitCommandError as e:
             logger.warning(f"Error obteniendo refs: {e}")
 
         return BranchInfo(
@@ -85,7 +85,7 @@ class GitService:
         except GitCommandError as e:
             logger.warning(f"Error en get_graph_log: {e}")
             return []
-        except Exception as e:
+        except (OSError, IOError) as e:
             logger.exception(f"Error inesperado en get_graph_log: {e}")
             return []
 
@@ -99,7 +99,7 @@ class GitService:
                 )
                 for c in self.repo.iter_commits(max_count=n, skip=skip)
             ]
-        except Exception as e:
+        except (GitCommandError, BadName) as e:
             logger.exception(f"Error obteniendo commits: {e}")
             return []
 
@@ -128,14 +128,14 @@ class GitService:
         try:
             result = self.repo.git.branch("--contains", sha)
             return [line.strip().lstrip("* ") for line in result.split("\n") if line.strip()]
-        except Exception as e:
+        except GitCommandError as e:
             logger.exception(f"Error obteniendo ramas de {sha}: {e}")
             return []
 
     def get_commit_file_diff(self, sha: str, path: str) -> str:
         try:
             return self.repo.git.show(sha, "--", path) or "(sin cambios)"
-        except Exception as e:
+        except (GitCommandError, BadName) as e:
             logger.exception(f"Error obteniendo diff de {path} en {sha}: {e}")
             return f"Error: {e}"
 
@@ -166,7 +166,7 @@ class GitService:
             if not result and path in self.repo.untracked_files:
                 result = self.repo.git.diff("--no-index", os.devnull, path, "--word-diff")
             return result or "(sin cambios)"
-        except Exception as e:
+        except GitCommandError as e:
             logger.exception(f"Error obteniendo diff para {path}: {e}")
             return f"Error al obtener diff: {e}"
 
@@ -189,7 +189,7 @@ class GitService:
     def unstage_file(self, path: str) -> None:
         try:
             self.repo.git.reset("HEAD", "--", path)
-        except Exception:
+        except GitCommandError:
             self.repo.git.rm("--cached", path)
 
     def stage_all(self) -> None:
@@ -241,7 +241,7 @@ class GitService:
         try:
             result = self.repo.git.stash("list")
             return [line for line in result.split("\n") if line.strip()]
-        except Exception as e:
+        except GitCommandError as e:
             logger.exception(f"Error listando stashes: {e}")
             return []
 
@@ -273,21 +273,21 @@ class GitService:
         try:
             result = self.repo.git.execute(args)
             return result
-        except Exception as e:
+        except (GitCommandError, OSError) as e:
             logger.exception(f"Error ejecutando comando: {cmd}")
             return f"Error: {e}"
 
     def get_working_diff(self) -> str:
         try:
             return self.repo.git.diff(None, "--word-diff") or "(sin cambios)"
-        except Exception as e:
+        except GitCommandError as e:
             logger.exception(f"Error en working diff: {e}")
             return "(sin cambios)"
 
     def get_staged_diff(self) -> str:
         try:
             return self.repo.git.diff("--cached", "--word-diff") or "(sin cambios)"
-        except Exception as e:
+        except GitCommandError as e:
             logger.exception(f"Error en staged diff: {e}")
             return "(sin cambios)"
 
@@ -332,19 +332,22 @@ class GitService:
         if not raw_diff:
             raise RuntimeError("No hay diff para este archivo.")
 
-        lines = raw_diff.splitlines(keepends=True)
-        header_end = 0
-        for i, line in enumerate(lines):
-            if line.startswith("@@"):
-                header_end = i
-                break
-        else:
-            raise RuntimeError("No se encontró header de hunk en el diff.")
+        # Intentar localizar el hunk.raw dentro del diff actual
+        idx = raw_diff.find(hunk.raw)
+        if idx == -1:
+            # fallback: buscar por header (hunk.header) y luego por líneas aproximadas
+            raise RuntimeError("El hunk ya no coincide con el diff actual (contexto cambiado).")
 
-        header_part = "".join(lines[:header_end])
+        # Extraer header del archivo: buscar el 'diff --git' más cercano antes del hunk
+        file_header_start = raw_diff.rfind("diff --git", 0, idx)
+        if file_header_start == -1:
+            header_part = ""
+        else:
+            header_part = raw_diff[file_header_start:idx]
+
         patch = header_part + hunk.raw + "\n"
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".patch", delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".patch", delete=False, encoding="utf-8") as f:
             f.write(patch)
             patch_path = f.name
 
@@ -353,13 +356,15 @@ class GitService:
         except GitCommandError as e:
             logger.exception(f"Error aplicando hunk en {path}: {e}")
             raise RuntimeError(
-                "No se pudo aplicar el hunk. "
-                "Las líneas de contexto probablemente cambiaron. "
+                "No se pudo aplicar el hunk. Las líneas de contexto probablemente cambiaron. "
                 f"Detalle: {e.stderr or str(e)}"
             ) from e
         finally:
-            if os.path.exists(patch_path):
-                os.unlink(patch_path)
+            try:
+                if os.path.exists(patch_path):
+                    os.unlink(patch_path)
+            except (OSError, IOError):
+                logger.exception("No se pudo eliminar el archivo temporal del parche.")
 
     def get_gitignore_content(self) -> str:
         gitignore_path = os.path.join(self.repo.working_tree_dir, ".gitignore")
@@ -378,7 +383,7 @@ class GitService:
                     message=c.message.split("\n")[0],
                     author=c.author.name,
                 ))
-        except Exception as e:
+        except (GitCommandError, BadName) as e:
             logger.exception(f"Error obteniendo commits para rebase: {e}")
         return commits
 
@@ -387,7 +392,7 @@ class GitService:
             commit = self.repo.commit(sha)
             if commit.parents:
                 return commit.parents[0].hexsha
-        except Exception as e:
+        except (BadName, ValueError) as e:
             logger.exception(f"Error obteniendo parent de {sha}: {e}")
         return None
 
@@ -408,7 +413,7 @@ class GitService:
                 ["git", "rebase", "-i", base_sha],
                 env={**os.environ, "GIT_SEQUENCE_EDITOR": editor_path},
             )
-        except Exception as e:
+        except (GitCommandError, OSError) as e:
             logger.exception(f"Error en rebase interactivo: {e}")
             raise
         finally:
@@ -418,7 +423,7 @@ class GitService:
     def is_merge_in_progress(self) -> bool:
         try:
             return os.path.exists(os.path.join(self.repo.working_tree_dir, ".git", "MERGE_HEAD"))
-        except Exception as e:
+        except (AttributeError, OSError):
             logger.warning(f"Error verificando merge: {e}")
             return False
 
@@ -426,7 +431,7 @@ class GitService:
         try:
             result = self.repo.git.diff("--name-only", "--diff-filter=U")
             return [f for f in result.split("\n") if f.strip()]
-        except Exception as e:
+        except GitCommandError as e:
             logger.exception(f"Error obteniendo archivos en conflicto: {e}")
             return []
 
@@ -435,7 +440,7 @@ class GitService:
         try:
             with open(full_path) as f:
                 content = f.read()
-        except Exception as e:
+        except (FileNotFoundError, IOError, OSError):
             logger.warning(f"Error leyendo {path} para conflictos: {e}")
             return []
         lines = content.split("\n")

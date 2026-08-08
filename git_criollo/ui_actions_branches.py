@@ -1,3 +1,4 @@
+from git import GitCommandError
 from textual.widgets import ListView
 
 from git_criollo.helpers import git_action
@@ -32,7 +33,7 @@ class MixinBranchActions:
                 self.git.checkout(r)
             self.notify(f"Checkout: {r}")
             self.actualizar_pantalla_completa()
-        except (Exception,) as e:
+        except (GitCommandError, RuntimeError) as e:
             self._notify_error(e)
 
     def action_eliminar_rama(self) -> None:
@@ -60,7 +61,7 @@ class MixinBranchActions:
                     self.git.delete_branch(r)
                     self.notify(f"Borrada: {r}")
                     self.actualizar_pantalla_completa()
-                except (Exception,) as e:
+                except (GitCommandError, RuntimeError) as e:
                     self._notify_error(e)
         if r:
             self.push_screen(confirmar_borrado_rama(r), p)
@@ -85,7 +86,7 @@ class MixinBranchActions:
                     self.git.merge(r)
                     self.notify(f"Merged {r} en {info.active}")
                     self.actualizar_pantalla_completa()
-                except (Exception,) as e:
+                except (GitCommandError, RuntimeError) as e:
                     self._notify_error(e)
         self.push_screen(confirmar_merge(r), p)
 
