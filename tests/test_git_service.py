@@ -328,7 +328,7 @@ class TestStageHunk:
             lines=["-nonexistent", "-bogus", "-line", "+WRONG"],
             raw="@@ -99,3 +99,3 @@\n-nonexistent\n-bogus\n-line\n+WRONG",
         )
-        with pytest.raises(RuntimeError, match="No se pudo aplicar"):
+        with pytest.raises(RuntimeError, match="ya no coincide|No se pudo aplicar"):
             gs.stage_hunk("hunk_err.txt", hunk)
 
 

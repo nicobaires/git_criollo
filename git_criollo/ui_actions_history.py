@@ -74,6 +74,9 @@ class MixinHistoryActions:
                     if b:
                         try:
                             base_sha = self.git.get_parent_sha(sha)
+                            if not base_sha:
+                                self.notify("No se pudo determinar el padre del commit.", severity="error")
+                                return
                             self.git.run_rebase(base_sha, todos)
                             self.notify("Rebase completado.")
                             self.actualizar_pantalla_completa()

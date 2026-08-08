@@ -32,7 +32,7 @@ def git_action(msg_exito: str | None = None, timeout: int = 10) -> Callable[[F],
                 if msg_exito:
                     self.notify(msg_exito, severity="information")
                 return result
-            except (GitCommandError, RuntimeError, Exception) as e:
+            except Exception as e:
                 if isinstance(e, (KeyboardInterrupt, SystemExit)):
                     raise
                 _notify_error_base(self.notify, e, timeout=timeout)

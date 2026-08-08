@@ -213,6 +213,7 @@ class VentanaConflictos(ModalScreen[bool]):
         self._idx_archivo = 0
         self._regiones: list = []
         self._idx_region = 0
+        self._resueltas = 0
 
     @property
     def git(self):
@@ -236,6 +237,7 @@ class VentanaConflictos(ModalScreen[bool]):
             self._regiones = self.git.get_conflict_regions(path)
             if self._regiones:
                 self._idx_region = 0
+                self._resueltas = 0
                 self._mostrar_conflicto(path)
                 return
             self._idx_archivo += 1
@@ -246,7 +248,7 @@ class VentanaConflictos(ModalScreen[bool]):
         region = self._regiones[self._idx_region]
         header = self.query_one("#conflict_header", Label)
         header.update(
-            f"[bold #ff5f5f]{path}[/] \u2014 Conflicto {self._idx_region + 1} de {len(self._regiones)}  "
+            f"[bold #ff5f5f]{path}[/] \u2014 Conflicto {self._resueltas + 1} \u2014 {len(self._regiones)} restantes  "
             f"(archivo {self._idx_archivo + 1} de {len(self.archivos)})"
         )
         content = (
@@ -271,16 +273,18 @@ class VentanaConflictos(ModalScreen[bool]):
         except Exception as e:
             self._notify_error(e)
             return
-        self._idx_region += 1
-        if self._idx_region >= len(self._regiones):
+        self._resueltas += 1
+        self._regiones = self.git.get_conflict_regions(path)
+        if self._regiones:
+            self._idx_region = 0
+            self._mostrar_conflicto(path)
+        else:
             try:
                 self.git.stage_file(path)
             except (GitCommandError, RuntimeError) as e:
                 self._notify_error(e)
             self._idx_archivo += 1
             self._cargar_siguiente_archivo()
-        else:
-            self._mostrar_conflicto(path)
 
     def action_ours(self) -> None:
         self._resolver_y_avanzar("ours")

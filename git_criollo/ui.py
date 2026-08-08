@@ -3,7 +3,7 @@ import os
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, ListView, ListItem, Label
 from textual.containers import Horizontal, Vertical
-from git import GitCommandError
+from git import GitCommandError, InvalidGitRepositoryError, NoSuchPathError
 
 from git_criollo.git_service import GitService
 from git_criollo.error_utils import notify_error as _notify_error_base
@@ -69,6 +69,10 @@ class GitCriolloApp(
             self._commit_offset = 0
             self._modo_grafico = False
             self.actualizar_pantalla_completa()
+        except InvalidGitRepositoryError as e:
+            self.exit(message=f"Error: No estás dentro de un repositorio de Git. ({e})")
+        except NoSuchPathError as e:
+            self.exit(message=f"Error: La ruta no existe. ({e})")
         except (GitCommandError, RuntimeError) as e:
             self.exit(message=f"Error: No estás dentro de un repositorio de Git. ({e})")
         except Exception as e:

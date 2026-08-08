@@ -335,7 +335,6 @@ class GitService:
         # Intentar localizar el hunk.raw dentro del diff actual
         idx = raw_diff.find(hunk.raw)
         if idx == -1:
-            # fallback: buscar por header (hunk.header) y luego por líneas aproximadas
             raise RuntimeError("El hunk ya no coincide con el diff actual (contexto cambiado).")
 
         # Extraer header del archivo: buscar el 'diff --git' más cercano antes del hunk
@@ -484,7 +483,8 @@ class GitService:
         elif choice == "theirs":
             replacement = region.theirs.split("\n")
         elif choice == "both":
-            replacement = (region.ours + "\n" + region.theirs).split("\n")
+            combined = "\n".join(filter(None, [region.ours, region.theirs]))
+            replacement = combined.split("\n") if combined else []
         else:
             raise ValueError(f"Opción de resolución inválida: {choice}")
         new_lines = lines[:region.start] + replacement + lines[region.end + 1:]

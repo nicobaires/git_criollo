@@ -36,18 +36,20 @@ uv run pytest tests/
 
 ### Correcciones incluidas
 
-La rama `fix/bugs-lote1` aplica 8 grupos de correcciones sobre el código base:
-
 - **HEAD detached**: muestra SHA corto en vez de asumir `"master"`
 - **Cross-platform**: `os.devnull` en vez de `/dev/null` (funciona en Windows)
 - **`checkout_remote`**: `rsplit` en vez de `split` para refs anidadas (`origin/feature/x`)
 - **pull/push/fetch**: sin fallback silencioso a `origin`, error descriptivo si no hay remote configurado
 - **`run_command`**: `shlex.split` + validación anti-inyección + lista de args a `execute()`
-- **`stage_hunk`**: manejo específico de `GitCommandError` → `RuntimeError`, cleanup en `finally`
+- **`stage_hunk`**: localización robusta de hunks via `raw_diff.find(hunk.raw)`, cleanup en `finally`
 - **Logging**: reemplazados todos los `except Exception: pass` con `logging.warning/exception`
 - **Excepciones específicas**: `GitCommandError`, `BadName`, `InvalidGitRepositoryError` en vez de `Exception` genérico
-- **Markup Rich escapado**: `]`, `{`, `}` además de `[` en diffs coloreados
+- **Markup Textual**: `textual.markup.escape` para diffs (backslashes, corchetes, llaves correctamente escapados)
 - **`KeyboardInterrupt`/`SystemExit`**: no se tragan más (Ctrl+C realmente sale)
+- **Thread-safety**: `call_from_thread` para notificaciones en pull/push/fetch (evita crashes)
+- **Resolución de conflictos**: re-parseo de regiones tras cada resolución (evita offsets stale)
+- **Push en detached HEAD**: aviso antes de intentar push sin rama activa
+- **NameError en handlers**: corregido `is_merge_in_progress` y `get_conflict_regions`
 
 ## Uso
 
@@ -159,7 +161,7 @@ tests/
 ├── conftest.py              # fixtures: repo temporal
 ├── test_diff_utils.py       # tests formateo diff
 ├── test_error_utils.py      # tests error handling
-└── test_git_service.py      # 52 tests: operaciones Git
+└── test_git_service.py      # tests completos de operaciones Git
 ```
 
 - `models.py` — dataclasses puras sin dependencias
