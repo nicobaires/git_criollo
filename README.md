@@ -32,7 +32,7 @@ uv add gitpython textual
 uv run pytest tests/
 ```
 
-72 tests que cubren toda la capa de servicio (`git_service.py`), formateo de diffs (`diff_utils.py`) y manejo de errores (`error_utils.py`). Usan repositorios temporales creados con `tmpdir`.
+79 tests que cubren toda la capa de servicio (`git_service.py`), el extractor de analytics (`extract_stats.py`), formateo de diffs (`diff_utils.py`) y manejo de errores (`error_utils.py`). Usan repositorios temporales creados con `tmpdir`.
 
 ### Correcciones incluidas
 

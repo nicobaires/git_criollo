@@ -9,6 +9,7 @@ const { kpis, life_metrics } = stats;
 <html lang="es">
 <head>
   <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>GitCriollo Analytics</title>
   <style>
     body { 
@@ -50,35 +51,30 @@ const { kpis, life_metrics } = stats;
         subtitle={`↑ Actividad en ${life_metrics.active_days} días`}
         icon="📝"
         color="#58a6ff"
-        client:load
       />
       <KpiCard 
         title="Desarrolladores" 
         value={kpis.total_authors}
         icon="👥"
         color="#f0883e"
-        client:load
       />
       <KpiCard 
         title="Lineas añadidas" 
         value={kpis.total_added}
         icon="➕"
         color="#3fb950"
-        client:load
       />
       <KpiCard 
         title="Lineas eliminadas" 
         value={kpis.total_deleted}
         icon="➖"
         color="#f85149"
-        client:load
       />
       <KpiCard 
         title="Total cambios" 
         value={kpis.total_changes}
         icon="📈"
         color="#a371f7"
-        client:load
       />
     </div>
 

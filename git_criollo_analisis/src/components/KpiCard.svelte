@@ -1,9 +1,5 @@
 <script>
-  export let title;
-  export let value;
-  export let subtitle = "";
-  export let icon = "📊";
-  export let color = "#58a6ff";
+  let { title, value, subtitle = "", icon = "📊", color = "#58a6ff" } = $props();
 </script>
 
 <div class="kpi-card" style="border-left: 4px solid {color}">

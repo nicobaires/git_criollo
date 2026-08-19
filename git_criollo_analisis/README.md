@@ -47,8 +47,7 @@ git_criollo_analisis/
 ├── astro.config.mjs        # config Astro (integración Svelte)
 ├── package.json
 ├── script/
-│   ├── extract_stats.py    # extractor completo de métricas (KPIs, timeline, heatmap, etc.)
-│   └── extract_stats01.py  # boceto: dumps commits a commits.json
+│   └── extract_stats.py    # extractor de métricas (KPIs, timeline, heatmap, etc.)
 └── src/
     ├── components/
     │   └── KpiCard.svelte  # tarjeta KPI reutilizable

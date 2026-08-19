@@ -18,12 +18,13 @@ from datetime import datetime, timedelta
 from collections import defaultdict, Counter
 from pathlib import Path
 
-# Asegurar que podemos importar git_criollo si estamos fuera del paquete
-# Ajustá este path según tu estructura real
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(PROJECT_ROOT))
-
-from git_criollo.git_service import GitService
+try:
+    from git_criollo.git_service import GitService
+except ImportError:
+    # Si git_criollo no está instalado, buscar la raíz del repo
+    REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+    sys.path.insert(0, str(REPO_ROOT))
+    from git_criollo.git_service import GitService
 
 
 def parse_args():
@@ -37,25 +38,26 @@ def parse_args():
 
 
 def extract_all(git: GitService, since: datetime | None, until: datetime | None, max_commits: int):
-    """Extrae todas las métricas del repo."""
+    """Extrae todas las métricas del repo en una sola pasada de git log --numstat."""
 
     repo = git.repo
-    commits_raw = list(repo.iter_commits(max_count=max_commits))
 
-    # Filtrar por fecha si se pidió
+    # ── Una sola pasada de git log --numstat ──
+    # (mucho más rápido que commit.stats, que calcula el diff de cada commit)
+    # El filtro de fechas se hace en git, ANTES del límite de commits.
+    args = ["--numstat", "--pretty=format:%x1e%H%x09%an%x09%cI"]
     if since:
-        commits_raw = [c for c in commits_raw if c.committed_datetime.replace(tzinfo=None) >= since]
+        args.append(f"--since={since.strftime('%Y-%m-%d %H:%M:%S')}")
     if until:
-        commits_raw = [c for c in commits_raw if c.committed_datetime.replace(tzinfo=None) <= until]
-
-    commits_raw.reverse()  # Del más viejo al más nuevo
+        args.append(f"--until={until.strftime('%Y-%m-%d %H:%M:%S')}")
+    args.append(f"--max-count={max_commits}")
+    output = repo.git.log(*args)
 
     # ── KPIs básicos ──
-    total_commits = len(commits_raw)
-    authors = set(c.author.name for c in commits_raw)
-    total_authors = len(authors)
+    total_commits = 0
+    authors = set()
 
-    # ── LOC totales (usando stats de cada commit) ──
+    # ── LOC totales ──
     total_added = 0
     total_deleted = 0
     total_changes = 0
@@ -72,55 +74,65 @@ def extract_all(git: GitService, since: datetime | None, until: datetime | None,
     file_changes = Counter()
 
     # ── Heatmap (commits por día) ──
-    # { "2024-01-15": 3 }
     heatmap = Counter()
 
     # ── Distribución de commits por autor ──
     author_commits = Counter()
 
-    # ── Métricas de "vida" ──
-    active_days = set()
-    day_counts = Counter()  # cuántos commits por día
+    for record in output.split("\x1e"):
+        if not record.strip():
+            continue
+        lines = record.splitlines()
+        meta = lines[0].split("\t")
+        if len(meta) < 3:
+            continue
+        _, author, iso_date = meta[0], meta[1], meta[2]
+        try:
+            dt = datetime.fromisoformat(iso_date).replace(tzinfo=None)
+        except ValueError:
+            continue
 
-    for commit in commits_raw:
-        author = commit.author.name
-        dt = commit.committed_datetime.replace(tzinfo=None)
+        total_commits += 1
+        authors.add(author)
         month_key = dt.strftime("%Y-%m")
         day_key = dt.strftime("%Y-%m-%d")
 
         # Commits por autor por mes
         commits_by_author_month[author][month_key] += 1
 
-        # LOC por mes
-        stats = commit.stats
-        added = stats.total["insertions"]
-        deleted = stats.total["deletions"]
-        loc_by_month[month_key]["added"] += added
-        loc_by_month[month_key]["deleted"] += deleted
-        total_added += added
-        total_deleted += deleted
-        total_changes += added + deleted
-
-        # Archivos hot
-        for filepath in stats.files:
-            file_changes[filepath] += 1
-
-        # Heatmap
-        heatmap[day_key] += 1
-
         # Distribución
         author_commits[author] += 1
 
-        # Métricas de vida
-        active_days.add(day_key)
-        day_counts[day_key] += 1
+        # Heatmap / métricas de vida
+        heatmap[day_key] += 1
+
+        # LOC por archivo (líneas numstat de este commit)
+        for line in lines[1:]:
+            parts = line.split("\t")
+            if len(parts) < 3:
+                continue
+            added_s, deleted_s, path = parts[0], parts[1], "\t".join(parts[2:])
+            try:
+                added = int(added_s)
+                deleted = int(deleted_s)
+            except ValueError:
+                continue  # '-' = cambio binario, se cuenta como 0
+            loc_by_month[month_key]["added"] += added
+            loc_by_month[month_key]["deleted"] += deleted
+            total_added += added
+            total_deleted += deleted
+            total_changes += added + deleted
+            file_changes[path] += 1
+
+    # ── Métricas de "vida" ──
+    active_days = set(heatmap.keys())
 
     # ── Calcular racha actual ──
     streak = _calculate_streak(active_days)
 
     # ── Mayor día ──
-    if day_counts:
-        top_day, top_count = day_counts.most_common(1)[0]
+    if heatmap:
+        top_day, top_count = heatmap.most_common(1)[0]
     else:
         top_day, top_count = None, 0
 
@@ -173,7 +185,7 @@ def extract_all(git: GitService, since: datetime | None, until: datetime | None,
         },
         "kpis": {
             "total_commits": total_commits,
-            "total_authors": total_authors,
+            "total_authors": len(authors),
             "total_added": total_added,
             "total_deleted": total_deleted,
             "total_changes": total_changes,
@@ -222,8 +234,6 @@ def _calculate_streak(active_days: set[str]) -> int:
         if (current - day).days == 1:
             streak += 1
             current = day
-        elif (current - day).days == 0:
-            continue  # mismo día, skip
         else:
             break
 
