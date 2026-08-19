@@ -132,6 +132,10 @@ Presioná `?` dentro de la aplicación para ver la ayuda completa.
 - **Navegación**: Tab para ciclar el foco entre paneles (el borde del panel activo cambia de color), mini-help visible siempre en la columna izquierda, ayuda completa con `?`
 - **HEAD detached**: se muestra una advertencia visible en el header
 
+## Dashboard de análisis
+
+`git_criollo_analisis/` es un dashboard independiente (Astro + Svelte) con KPIs y métricas de actividad del repositorio. Ver su [README propio](git_criollo_analisis/README.md) para instalación, extractor de datos y esquema JSON.
+
 ## Estructura del proyecto
 
 ```

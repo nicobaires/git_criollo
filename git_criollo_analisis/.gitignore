@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+
+# Astro build cache and output
+.astro/
+dist/
+
+# Generated data (created by script/extract_stats.py)
+src/data/stats.json
+commits.json
+
+# Logs
+*.log
