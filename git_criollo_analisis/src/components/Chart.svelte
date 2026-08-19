@@ -14,7 +14,11 @@
   onMount(() => {
     if (!canvas) return;
     try {
-      chart = new Chart(canvas, { type, data, options });
+      chart = new Chart(canvas, {
+        type,
+        data: $state.snapshot(data),
+        options: $state.snapshot(options),
+      });
     } catch (err) {
       console.error("[Chart] error al crear el gráfico:", err);
     }

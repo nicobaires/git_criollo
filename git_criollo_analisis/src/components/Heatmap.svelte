@@ -21,60 +21,64 @@
     return new Date(y, m - 1, d);
   }
 
-  const counts = new Map(data.map((d) => [d.date, d.count]));
-  const maxCount = data.length ? Math.max(...data.map((d) => d.count)) : 0;
-  const totalCommits = data.reduce((a, d) => a + d.count, 0);
-  const topDay = data.reduce((a, b) => (b.count > (a?.count ?? 0) ? b : a), null);
+  const { counts, maxCount, totalCommits, topDay, hasData, weeks, monthLabels } = $derived.by(() => {
+    const counts = new Map(data.map((d) => [d.date, d.count]));
+    const maxCount = data.length ? Math.max(...data.map((d) => d.count)) : 0;
+    const totalCommits = data.reduce((a, d) => a + d.count, 0);
+    const topDay = data.reduce((a, b) => (b.count > (a?.count ?? 0) ? b : a), null);
 
-  const today = new Date();
-  const end = today;
+    const today = new Date();
+    const end = today;
 
-  let start;
-  if (data.length) {
-    const first = parseDate([...data.map((d) => d.date)].sort()[0]);
-    const dow = (first.getDay() + 6) % 7; // lunes = 0
-    start = new Date(first);
-    start.setDate(first.getDate() - dow);
-  } else {
-    const dow = (today.getDay() + 6) % 7;
-    start = new Date(today);
-    start.setDate(today.getDate() - dow);
-  }
-
-  const hasData = data.length > 0 && start <= end;
-
-  function level(count) {
-    if (count <= 0 || maxCount <= 0) return 0;
-    const pct = count / maxCount;
-    if (pct <= 0.25) return 1;
-    if (pct <= 0.5) return 2;
-    if (pct <= 0.75) return 3;
-    return 4;
-  }
-
-  const weeks = [];
-  const monthLabels = [];
-  if (hasData) {
-    let week = [];
-    let prevMonthKey = null;
-    const cursor = new Date(start);
-    while (cursor <= end) {
-      if (week.length === 0) {
-        const monthKey = `${cursor.getFullYear()}-${cursor.getMonth()}`;
-        monthLabels.push(prevMonthKey === monthKey ? "" : MESES[cursor.getMonth()]);
-        prevMonthKey = monthKey;
-      }
-      const key = fmt(cursor);
-      const count = counts.get(key) ?? 0;
-      week.push({ key, count, level: level(count) });
-      if (week.length === 7) {
-        weeks.push(week);
-        week = [];
-      }
-      cursor.setDate(cursor.getDate() + 1);
+    let start;
+    if (data.length) {
+      const first = parseDate([...data.map((d) => d.date)].sort()[0]);
+      const dow = (first.getDay() + 6) % 7; // lunes = 0
+      start = new Date(first);
+      start.setDate(first.getDate() - dow);
+    } else {
+      const dow = (today.getDay() + 6) % 7;
+      start = new Date(today);
+      start.setDate(today.getDate() - dow);
     }
-    if (week.length) weeks.push(week);
-  }
+
+    const hasData = data.length > 0 && start <= end;
+
+    function level(count) {
+      if (count <= 0 || maxCount <= 0) return 0;
+      const pct = count / maxCount;
+      if (pct <= 0.25) return 1;
+      if (pct <= 0.5) return 2;
+      if (pct <= 0.75) return 3;
+      return 4;
+    }
+
+    const weeks = [];
+    const monthLabels = [];
+    if (hasData) {
+      let week = [];
+      let prevMonthKey = null;
+      const cursor = new Date(start);
+      while (cursor <= end) {
+        if (week.length === 0) {
+          const monthKey = `${cursor.getFullYear()}-${cursor.getMonth()}`;
+          monthLabels.push(prevMonthKey === monthKey ? "" : MESES[cursor.getMonth()]);
+          prevMonthKey = monthKey;
+        }
+        const key = fmt(cursor);
+        const count = counts.get(key) ?? 0;
+        week.push({ key, count, level: level(count) });
+        if (week.length === 7) {
+          weeks.push(week);
+          week = [];
+        }
+        cursor.setDate(cursor.getDate() + 1);
+      }
+      if (week.length) weeks.push(week);
+    }
+
+    return { counts, maxCount, totalCommits, topDay, hasData, weeks, monthLabels };
+  });
 </script>
 
 {#if !hasData}
