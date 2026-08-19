@@ -50,7 +50,9 @@ git_criollo_analisis/
 │   └── extract_stats.py    # extractor de métricas (KPIs, timeline, heatmap, etc.)
 └── src/
     ├── components/
-    │   └── KpiCard.svelte  # tarjeta KPI reutilizable
+    │   ├── KpiCard.svelte  # tarjeta KPI reutilizable
+    │   ├── Chart.svelte    # wrapper genérico de chart.js (hidrata con client:load)
+    │   └── Heatmap.svelte  # grid de actividad estilo GitHub (SSR, sin JS)
     ├── data/
     │   └── stats.json      # datos generados (no versionado)
     └── pages/
