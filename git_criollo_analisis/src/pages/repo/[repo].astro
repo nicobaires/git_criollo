@@ -2,31 +2,42 @@
 // src/pages/repo/[repo].astro
 import Dashboard from "../../components/Dashboard.astro";
 import { loadRepos } from "../../lib/repos";
-import { loadStatsMap } from "../../lib/stats";
+import { getStats } from "../../lib/stats";
 
-export function getStaticPaths() {
-  const repos = loadRepos();
-  const statsMap = loadStatsMap();
-  return repos.map((r) => ({
-    params: { repo: r.name },
-    props: {
-      repo: r,
-      repos,
-      stats: statsMap[`../data/stats/${r.name}.json`] ?? null,
-    },
-  }));
-}
-
-const { repo, repos, stats } = Astro.props;
+const repos = loadRepos();
+const repo = repos.find((r) => r.name === Astro.params.repo) ?? null;
+const stats = repo ? getStats(repo.name) : null;
 ---
 
 <html lang="es">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{repo.name} · GitCriollo Analytics</title>
+    <title>{repo ? `${repo.name} · GitCriollo Analytics` : "No encontrado · GitCriollo Analytics"}</title>
   </head>
   <body>
-    <Dashboard repo={repo} repos={repos} stats={stats} />
+    {repo ? (
+      <Dashboard repo={repo} repos={repos} stats={stats} />
+    ) : (
+      <main class="dashboard">
+        <p class="empty">No existe ese repositorio. <a href="/">Volver al dashboard</a></p>
+      </main>
+    )}
   </body>
 </html>
+
+<style>
+  body {
+    margin: 0;
+    background: #0d1117;
+    color: #c9d1d9;
+    font-family: -apple-system, system-ui, sans-serif;
+  }
+  .dashboard {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 40px 24px;
+  }
+  .empty { color: #8b949e; font-size: 14px; }
+  .empty a { color: #58a6ff; }
+</style>

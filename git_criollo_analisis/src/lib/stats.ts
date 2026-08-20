@@ -1,3 +1,7 @@
+import fs from "node:fs";
+import path from "node:path";
+import { findProjectRoot } from "./paths";
+
 export interface Stats {
   meta: {
     repo_name: string;
@@ -32,9 +36,30 @@ export interface Stats {
   distribution: { author: string; commits: number; percentage: number }[];
 }
 
+const STATS_DIR = path.join(findProjectRoot(), "src", "data", "stats");
+
+export function getStats(repoName: string): Stats | null {
+  const file = path.join(STATS_DIR, `${repoName}.json`);
+  try {
+    return JSON.parse(fs.readFileSync(file, "utf-8")) as Stats;
+  } catch {
+    return null;
+  }
+}
+
 export function loadStatsMap(): Record<string, Stats> {
-  return import.meta.glob("../data/stats/*.json", {
-    eager: true,
-    import: "default",
-  }) as Record<string, Stats>;
+  const map: Record<string, Stats> = {};
+  let entries: string[];
+  try {
+    entries = fs.readdirSync(STATS_DIR);
+  } catch {
+    return map;
+  }
+  for (const entry of entries) {
+    if (!entry.endsWith(".json")) continue;
+    const name = path.basename(entry, ".json");
+    const stats = getStats(name);
+    if (stats) map[name] = stats;
+  }
+  return map;
 }

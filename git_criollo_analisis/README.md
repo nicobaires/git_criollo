@@ -17,7 +17,17 @@ pnpm install
 
 El dashboard lee `src/data/stats/<repo>.json`, generado por el extractor que reutiliza `GitService` del proyecto principal.
 
-### Varios repositorios (modo recomendado)
+### Agregar repositorios desde la app (modo recomendado)
+
+Con el servidor corriendo (`pnpm dev` o el build con Node), usá el botón **+ Agregar repo** del header y pegá la ruta de la carpeta. La app:
+
+1. valida que la carpeta exista y sea un repositorio Git (toma la raíz real del repo);
+2. la agrega a `repos.json` (lo crea si no existe) con un nombre derivado de la carpeta, sin duplicados;
+3. genera sus stats automáticamente con el extractor.
+
+El dashboard se sirve con Node (adaptador `@astrojs/node`, `output: 'server'`), así las páginas y los datos se leen por request: un repo recién agregado aparece sin reiniciar nada.
+
+### Varios repositorios (manual)
 
 Configurá los repos a analizar en `repos.json` (copiá `repos.example.json`; está en `.gitignore` porque contiene rutas locales):
 
@@ -62,15 +72,15 @@ Opciones del extractor:
 
 ```bash
 pnpm dev       # servidor de desarrollo
-pnpm build     # build estático a dist/
-pnpm preview   # servir el build
+pnpm build     # build de producción (cliente + servidor Node)
+pnpm preview   # servir el build con el adaptador de Node
 ```
 
 ## Estructura
 
 ```
 git_criollo_analisis/
-├── astro.config.mjs        # config Astro (integración Svelte)
+├── astro.config.mjs        # config Astro (Svelte + adaptador Node, output server)
 ├── package.json
 ├── repos.example.json      # ejemplo de config de repositorios (copiar a repos.json)
 ├── script/
@@ -78,18 +88,22 @@ git_criollo_analisis/
 └── src/
     ├── components/
     │   ├── Dashboard.astro # dashboard completo + selector de repositorios
+    │   ├── AddRepo.svelte  # alta de repos desde la app (POST /api/repos)
     │   ├── KpiCard.svelte  # tarjeta KPI reutilizable
     │   ├── Chart.svelte    # wrapper genérico de chart.js (hidrata con client:load)
     │   └── Heatmap.svelte  # grid de actividad estilo GitHub (SSR, sin JS)
     ├── data/
     │   └── stats/          # stats por repo: <name>.json (no versionado)
     ├── lib/
+    │   ├── paths.ts        # resuelve la raíz del proyecto en runtime
     │   ├── repos.ts        # carga repos.json (config de repositorios)
     │   └── stats.ts        # carga src/data/stats/*.json + tipos del esquema
     └── pages/
         ├── index.astro     # dashboard del primer repo de repos.json
+        ├── api/
+        │   └── repos.ts    # POST /api/repos: valida, agrega y genera stats
         └── repo/
-            └── [repo].astro # una página estática por repo (/repo/<name>)
+            └── [repo].astro # página por repo (/repo/<name>), por request
 ```
 
 ## Esquema de `stats.json`

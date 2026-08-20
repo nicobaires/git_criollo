@@ -2,12 +2,11 @@
 // src/pages/index.astro
 import Dashboard from "../components/Dashboard.astro";
 import { loadRepos } from "../lib/repos";
-import { loadStatsMap } from "../lib/stats";
+import { getStats } from "../lib/stats";
 
 const repos = loadRepos();
-const statsMap = loadStatsMap();
-const repo = repos[0] ?? { name: "?", path: "?" };
-const stats = repo.name !== "?" ? (statsMap[`../data/stats/${repo.name}.json`] ?? null) : null;
+const repo = repos[0] ?? null;
+const stats = repo ? getStats(repo.name) : null;
 ---
 
 <html lang="es">
