@@ -4,6 +4,7 @@ import KpiCard from './KpiCard.svelte';
 import Chart from './Chart.svelte';
 import Heatmap from './Heatmap.svelte';
 import AddRepo from './AddRepo.svelte';
+import RemoveRepo from './RemoveRepo.svelte';
 import type { Repo } from '../lib/repos';
 import type { Stats } from '../lib/stats';
 
@@ -110,13 +111,16 @@ if (stats) {
     {repos.length > 0 && repo && (
       <nav class="repo-nav" aria-label="Repositorios">
         {repos.map((r) => (
-          <a
-            href={`/repo/${r.name}`}
-            class:list={["repo-pill", r.name === repo.name && "repo-pill-active"]}
-            title={r.path}
-          >
-            {r.name}
-          </a>
+          <div class="repo-pill-wrap">
+            <a
+              href={`/repo/${r.name}`}
+              class:list={["repo-pill", r.name === repo.name && "repo-pill-active"]}
+              title={r.path}
+            >
+              {r.name}
+            </a>
+            <RemoveRepo name={r.name} client:load />
+          </div>
         ))}
       </nav>
     )}
@@ -263,23 +267,32 @@ if (stats) {
     gap: 8px;
     margin-bottom: 8px;
   }
-  .repo-pill {
-    display: inline-block;
-    padding: 6px 14px;
+  .repo-pill-wrap {
+    display: inline-flex;
+    align-items: center;
     border-radius: 999px;
     border: 1px solid #21262d;
     background: #161b22;
+    transition: border-color 0.15s;
+  }
+  .repo-pill-wrap:hover {
+    border-color: #58a6ff;
+  }
+  .repo-pill {
+    display: inline-block;
+    padding: 6px 4px 6px 14px;
     color: #8b949e;
     font-size: 13px;
     text-decoration: none;
-    transition: color 0.15s, border-color 0.15s;
+    transition: color 0.15s;
   }
   .repo-pill:hover {
     color: #c9d1d9;
-    border-color: #58a6ff;
   }
   .repo-pill-active {
     color: #e6edf3;
+  }
+  .repo-pill-wrap:has(.repo-pill-active) {
     border-color: #58a6ff;
     background: rgba(88, 166, 255, 0.12);
   }

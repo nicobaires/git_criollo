@@ -27,6 +27,8 @@ Con el servidor corriendo (`pnpm dev` o el build con Node), usá el botón **+ A
 
 El dashboard se sirve con Node (adaptador `@astrojs/node`, `output: 'server'`), así las páginas y los datos se leen por request: un repo recién agregado aparece sin reiniciar nada.
 
+Para **quitar** un repo, pasá el mouse sobre su pill y usá el ✕: confirma y lo saca de `repos.json` (borrando también sus stats generados).
+
 ### Varios repositorios (manual)
 
 Configurá los repos a analizar en `repos.json` (copiá `repos.example.json`; está en `.gitignore` porque contiene rutas locales):
@@ -89,6 +91,7 @@ git_criollo_analisis/
     ├── components/
     │   ├── Dashboard.astro # dashboard completo + selector de repositorios
     │   ├── AddRepo.svelte  # alta de repos desde la app (POST /api/repos)
+    │   ├── RemoveRepo.svelte # baja de repos desde la app (DELETE /api/repos)
     │   ├── KpiCard.svelte  # tarjeta KPI reutilizable
     │   ├── Chart.svelte    # wrapper genérico de chart.js (hidrata con client:load)
     │   └── Heatmap.svelte  # grid de actividad estilo GitHub (SSR, sin JS)
@@ -101,7 +104,7 @@ git_criollo_analisis/
     └── pages/
         ├── index.astro     # dashboard del primer repo de repos.json
         ├── api/
-        │   └── repos.ts    # POST /api/repos: valida, agrega y genera stats
+        │   └── repos.ts    # POST/DELETE /api/repos: agrega/quita repos y stats
         └── repo/
             └── [repo].astro # página por repo (/repo/<name>), por request
 ```

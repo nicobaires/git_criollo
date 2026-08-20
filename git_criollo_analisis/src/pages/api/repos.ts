@@ -1,6 +1,7 @@
 // src/pages/api/repos.ts
 // POST /api/repos — agrega un repositorio local a repos.json y dispara la
 // generación de sus stats con script/extract_stats.py
+// DELETE /api/repos — quita un repositorio de repos.json y borra sus stats
 import fs from "node:fs";
 import path from "node:path";
 import { execSync, spawn } from "node:child_process";
@@ -142,6 +143,41 @@ export async function POST({ request }: { request: Request }) {
 function jsonError(error: string, status: number) {
   return new Response(JSON.stringify({ error }), {
     status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+const NAME_RE = /^[a-z0-9_-]+$/;
+
+export async function DELETE({ request }: { request: Request }) {
+  let body: { name?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return new Response(JSON.stringify({ error: "Body JSON inválido" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const name = body.name?.trim() ?? "";
+  if (!NAME_RE.test(name)) {
+    return jsonError("Nombre de repositorio inválido", 400);
+  }
+
+  const repos = readConfig();
+  const match = repos.find((r) => r.name === name);
+  if (!match) {
+    return jsonError(`El repositorio "${name}" no está en la lista`, 404);
+  }
+
+  writeConfig(repos.filter((r) => r.name !== name));
+
+  const statsFile = path.join(STATS_DIR, `${name}.json`);
+  fs.rmSync(statsFile, { force: true });
+
+  return new Response(JSON.stringify({ ok: true, repo: { name } }), {
+    status: 200,
     headers: { "Content-Type": "application/json" },
   });
 }
