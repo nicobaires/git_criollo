@@ -42,7 +42,8 @@
 <div class="remove-repo">
   <button
     type="button"
-    class:list={["remove-btn", confirming && "remove-btn-confirm"]}
+    class="remove-btn"
+    class:remove-btn-confirm={confirming}
     aria-label={confirming ? `Confirmar quitar ${name}` : `Quitar ${name}`}
     disabled={busy}
     onclick={remove}
@@ -64,10 +65,10 @@
   .remove-btn {
     border: none;
     background: none;
-    color: #484f58;
-    font-size: 11px;
+    color: #7d8590;
+    font-size: 12px;
     cursor: pointer;
-    padding: 2px 6px;
+    padding: 2px 10px 2px 4px;
     border-radius: 6px;
     line-height: 1;
     transition: color 0.15s, background 0.15s;
@@ -80,6 +81,7 @@
     color: #0d1117;
     background: #f85149;
     font-size: 11px;
+    font-weight: 600;
     padding: 4px 8px;
   }
   .remove-btn-confirm:hover {
