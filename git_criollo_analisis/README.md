@@ -15,10 +15,35 @@ pnpm install
 
 ## Generar los datos
 
-El dashboard lee `src/data/stats.json`, generado por el extractor que reutiliza `GitService` del proyecto principal:
+El dashboard lee `src/data/stats/<repo>.json`, generado por el extractor que reutiliza `GitService` del proyecto principal.
+
+### Varios repositorios (modo recomendado)
+
+Configurá los repos a analizar en `repos.json` (copiá `repos.example.json`; está en `.gitignore` porque contiene rutas locales):
+
+```json
+{
+  "repos": [
+    { "name": "git_criollo", "path": "/ruta/al/repo/git_criollo" },
+    { "name": "otro-proyecto", "path": "/ruta/al/repo/otro-proyecto" }
+  ]
+}
+```
+
+> `name` se usa para la URL del dashboard (`/repo/<name>`) y como nombre del archivo de stats: usar solo `a-z`, `0-9`, `-` y `_`.
+
+Y generá los stats de todos:
 
 ```bash
-python script/extract_stats.py /ruta/al/repo -o src/data/stats.json
+python script/extract_stats.py --all
+```
+
+Esto escribe `src/data/stats/<name>.json` por cada repo.
+
+### Un solo repositorio
+
+```bash
+python script/extract_stats.py /ruta/al/repo -o src/data/stats/mi-repo.json
 ```
 
 Opciones del extractor:
@@ -29,8 +54,9 @@ Opciones del extractor:
 | `--since` | Fecha inicio (YYYY-MM-DD) |
 | `--until` | Fecha fin (YYYY-MM-DD) |
 | `--max-commits` | Máximo de commits a analizar (default: 5000) |
+| `--all` | Genera stats para todos los repos de `repos.json` |
 
-> `src/data/stats.json` está en `.gitignore`: es un artefacto generado, no se versiona.
+> `src/data/stats/` está en `.gitignore`: es un artefacto generado, no se versiona.
 
 ## Uso
 
@@ -46,17 +72,24 @@ pnpm preview   # servir el build
 git_criollo_analisis/
 ├── astro.config.mjs        # config Astro (integración Svelte)
 ├── package.json
+├── repos.example.json      # ejemplo de config de repositorios (copiar a repos.json)
 ├── script/
 │   └── extract_stats.py    # extractor de métricas (KPIs, timeline, heatmap, etc.)
 └── src/
     ├── components/
+    │   ├── Dashboard.astro # dashboard completo + selector de repositorios
     │   ├── KpiCard.svelte  # tarjeta KPI reutilizable
     │   ├── Chart.svelte    # wrapper genérico de chart.js (hidrata con client:load)
     │   └── Heatmap.svelte  # grid de actividad estilo GitHub (SSR, sin JS)
     ├── data/
-    │   └── stats.json      # datos generados (no versionado)
+    │   └── stats/          # stats por repo: <name>.json (no versionado)
+    ├── lib/
+    │   ├── repos.ts        # carga repos.json (config de repositorios)
+    │   └── stats.ts        # carga src/data/stats/*.json + tipos del esquema
     └── pages/
-        └── index.astro     # dashboard principal
+        ├── index.astro     # dashboard del primer repo de repos.json
+        └── repo/
+            └── [repo].astro # una página estática por repo (/repo/<name>)
 ```
 
 ## Esquema de `stats.json`

@@ -1,0 +1,32 @@
+---
+// src/pages/repo/[repo].astro
+import Dashboard from "../../components/Dashboard.astro";
+import { loadRepos } from "../../lib/repos";
+import { loadStatsMap } from "../../lib/stats";
+
+export function getStaticPaths() {
+  const repos = loadRepos();
+  const statsMap = loadStatsMap();
+  return repos.map((r) => ({
+    params: { repo: r.name },
+    props: {
+      repo: r,
+      repos,
+      stats: statsMap[`../data/stats/${r.name}.json`] ?? null,
+    },
+  }));
+}
+
+const { repo, repos, stats } = Astro.props;
+---
+
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{repo.name} · GitCriollo Analytics</title>
+  </head>
+  <body>
+    <Dashboard repo={repo} repos={repos} stats={stats} />
+  </body>
+</html>

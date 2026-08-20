@@ -34,6 +34,7 @@ def parse_args():
     parser.add_argument("--since", help="Fecha inicio (YYYY-MM-DD)")
     parser.add_argument("--until", help="Fecha fin (YYYY-MM-DD)")
     parser.add_argument("--max-commits", type=int, default=5000, help="Máximo commits a analizar")
+    parser.add_argument("--all", action="store_true", help="Genera stats para todos los repos de repos.json")
     return parser.parse_args()
 
 
@@ -240,32 +241,54 @@ def _calculate_streak(active_days: set[str]) -> int:
     return streak
 
 
+def _write_stats(data, output_path: Path):
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+
+def _analyze_one(repo_path, since, until, max_commits, output_path):
+    print(f"🔍 Analizando repo: {os.path.abspath(repo_path)}")
+    if since:
+        print(f"   Desde: {args_since_str(since)}")
+    if until:
+        print(f"   Hasta: {args_since_str(until)}")
+
+    git = GitService(repo_path)
+    data = extract_all(git, since, until, max_commits)
+
+    _write_stats(data, output_path)
+
+    print(f"✅ Stats generados: {output_path}")
+    print(f"   Commits: {data['kpis']['total_commits']}")
+    print(f"   Autores: {data['kpis']['total_authors']}")
+    print(f"   Racha: {data['life_metrics']['current_streak_days']} días")
+
+
+def args_since_str(dt: datetime) -> str:
+    return dt.strftime("%Y-%m-%d")
+
+
 def main():
     args = parse_args()
 
     since = datetime.strptime(args.since, "%Y-%m-%d") if args.since else None
     until = datetime.strptime(args.until, "%Y-%m-%d") if args.until else None
 
-    print(f"🔍 Analizando repo: {os.path.abspath(args.repo_path)}")
-    if since:
-        print(f"   Desde: {args.since}")
-    if until:
-        print(f"   Hasta: {args.until}")
+    if args.all:
+        config_path = Path(__file__).resolve().parent.parent / "repos.json"
+        if not config_path.exists():
+            sys.exit(f"❌ No existe {config_path}. Crealo con el formato del README (lista de repos).")
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+        repos = config.get("repos", [])
+        if not repos:
+            sys.exit("❌ repos.json no tiene repos en la lista 'repos'.")
+        stats_dir = Path(__file__).resolve().parent.parent / "src" / "data" / "stats"
+        for repo in repos:
+            _analyze_one(repo["path"], since, until, args.max_commits, stats_dir / f"{repo['name']}.json")
+        return
 
-    git = GitService(args.repo_path)
-    data = extract_all(git, since, until, args.max_commits)
-
-    # Asegurar que el directorio de salida existe
-    output_path = Path(args.output)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-
-    print(f"✅ Stats generados: {output_path}")
-    print(f"   Commits: {data['kpis']['total_commits']}")
-    print(f"   Autores: {data['kpis']['total_authors']}")
-    print(f"   Racha: {data['life_metrics']['current_streak_days']} días")
+    _analyze_one(args.repo_path, since, until, args.max_commits, Path(args.output))
 
 
 if __name__ == "__main__":

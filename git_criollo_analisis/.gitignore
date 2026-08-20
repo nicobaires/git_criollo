@@ -5,9 +5,12 @@ node_modules/
 .astro/
 dist/
 
-# Generated data (created by script/extract_stats.py)
-src/data/stats.json
+# Generated data (created by script/extract_stats.py --all)
+src/data/stats/
 commits.json
+
+# Local config: repositorios a analizar (rutas locales de cada máquina)
+repos.json
 
 # Logs
 *.log

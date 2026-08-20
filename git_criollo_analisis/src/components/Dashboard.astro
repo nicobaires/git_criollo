@@ -1,0 +1,357 @@
+---
+// src/components/Dashboard.astro
+import KpiCard from './KpiCard.svelte';
+import Chart from './Chart.svelte';
+import Heatmap from './Heatmap.svelte';
+import type { Repo } from '../lib/repos';
+import type { Stats } from '../lib/stats';
+
+interface Props {
+  repo: Repo;
+  repos: Repo[];
+  stats: Stats | null;
+}
+
+const { repo, repos, stats } = Astro.props;
+
+const palette = ["#58a6ff", "#f0883e", "#3fb950", "#f85149", "#a371f7", "#d29922", "#f778ba", "#39c5cf"];
+
+let kpis, life_metrics, timeline, heatmap, hot_files, distribution;
+let commitsBarData, commitsBarOptions;
+let distributionData, distributionOptions;
+let locLineData, locLineOptions;
+let maxFileChanges = 1;
+
+if (stats) {
+  ({ kpis, life_metrics, timeline, heatmap, hot_files, distribution } = stats);
+
+  const authors = Object.keys(timeline.commits_by_author);
+
+  commitsBarData = {
+    labels: timeline.months,
+    datasets: authors.map((author, i) => ({
+      label: author,
+      data: timeline.commits_by_author[author],
+      backgroundColor: palette[i % palette.length],
+    })),
+  };
+
+  commitsBarOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { position: "bottom" } },
+    scales: {
+      x: { stacked: true, grid: { display: false } },
+      y: { stacked: true, beginAtZero: true },
+    },
+  };
+
+  distributionData = {
+    labels: distribution.map((d) => d.author),
+    datasets: [
+      {
+        data: distribution.map((d) => d.commits),
+        backgroundColor: distribution.map((_, i) => palette[i % palette.length]),
+        borderWidth: 0,
+      },
+    ],
+  };
+
+  distributionOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: "62%",
+    plugins: { legend: { position: "bottom" } },
+  };
+
+  locLineData = {
+    labels: timeline.loc_by_month.months,
+    datasets: [
+      {
+        label: "Añadidas",
+        data: timeline.loc_by_month.added,
+        borderColor: "#3fb950",
+        backgroundColor: "rgba(63, 185, 80, 0.12)",
+        fill: true,
+        tension: 0.3,
+      },
+      {
+        label: "Eliminadas",
+        data: timeline.loc_by_month.deleted,
+        borderColor: "#f85149",
+        backgroundColor: "rgba(248, 81, 73, 0.12)",
+        fill: true,
+        tension: 0.3,
+      },
+    ],
+  };
+
+  locLineOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { position: "bottom" } },
+    scales: {
+      x: { grid: { display: false } },
+      y: { beginAtZero: true },
+    },
+  };
+
+  maxFileChanges = Math.max(...hot_files.map((f) => f.changes), 1);
+}
+---
+
+<main class="dashboard">
+  <header class="dashboard-header">
+    <h1>GitCriollo Analytics</h1>
+    {repos.length > 0 && (
+      <nav class="repo-nav" aria-label="Repositorios">
+        {repos.map((r) => (
+          <a
+            href={`/repo/${r.name}`}
+            class:list={["repo-pill", r.name === repo.name && "repo-pill-active"]}
+            title={r.path}
+          >
+            {r.name}
+          </a>
+        ))}
+      </nav>
+    )}
+    {stats ? (
+      <p class="repo-subtitle">
+        <span class="repo-path" title={repo.path}>{repo.path}</span>
+        <span>· {stats.meta.branch} · {stats.timeline.months[0]} a {stats.timeline.months.at(-1)}</span>
+      </p>
+    ) : (
+      <p class="repo-subtitle">
+        <span class="repo-path" title={repo.path}>{repo.path}</span>
+        <span>· sin datos</span>
+      </p>
+    )}
+  </header>
+
+  {!stats ? (
+    <p class="empty">
+      No hay datos para <strong>{repo.name}</strong>. Generalos con:
+      <code>python script/extract_stats.py --all</code>
+    </p>
+  ) : (
+    <>
+      <div class="kpis-grid">
+        <KpiCard
+          title="Commits"
+          value={kpis.total_commits}
+          subtitle={`↑ Actividad en ${life_metrics.active_days} días`}
+          icon="📝"
+          color="#58a6ff"
+        />
+        <KpiCard
+          title="Desarrolladores"
+          value={kpis.total_authors}
+          icon="👥"
+          color="#f0883e"
+        />
+        <KpiCard
+          title="Lineas añadidas"
+          value={kpis.total_added}
+          icon="➕"
+          color="#3fb950"
+        />
+        <KpiCard
+          title="Lineas eliminadas"
+          value={kpis.total_deleted}
+          icon="➖"
+          color="#f85149"
+        />
+        <KpiCard
+          title="Total cambios"
+          value={kpis.total_changes}
+          icon="📈"
+          color="#a371f7"
+        />
+      </div>
+
+      <div class="charts-grid">
+        <section class="chart-card span-2">
+          <h3>Commits por autor y mes</h3>
+          <div class="chart-body">
+            <Chart client:load type="bar" data={commitsBarData} options={commitsBarOptions} />
+          </div>
+        </section>
+
+        <section class="chart-card">
+          <h3>Distribución por autor</h3>
+          <div class="chart-body">
+            <Chart client:load type="doughnut" data={distributionData} options={distributionOptions} />
+          </div>
+        </section>
+
+        <section class="chart-card">
+          <h3>Líneas por mes</h3>
+          <div class="chart-body">
+            <Chart client:load type="line" data={locLineData} options={locLineOptions} />
+          </div>
+        </section>
+
+        <section class="chart-card">
+          <h3>Archivos más tocados</h3>
+          {hot_files.length === 0 ? (
+            <p class="empty">Sin datos</p>
+          ) : (
+            <div class="hot-files">
+              {hot_files.map((f) => (
+                <div>
+                  <div class="hot-file-info">
+                    <span class="hot-file-path">📄 {f.path}</span>
+                    <span class="hot-file-count">{f.changes}</span>
+                  </div>
+                  <div class="hot-file-bar">
+                    <div class="hot-file-bar-fill" style={`width: ${(f.changes / maxFileChanges) * 100}%`} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section class="chart-card span-2">
+          <h3>Actividad diaria</h3>
+          <Heatmap data={heatmap} />
+        </section>
+      </div>
+    </>
+  )}
+</main>
+
+<style>
+  body {
+    margin: 0;
+    background: #0d1117;
+    color: #c9d1d9;
+    font-family: -apple-system, system-ui, sans-serif;
+  }
+  .dashboard {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 40px 24px;
+  }
+  .dashboard-header {
+    margin-bottom: 32px;
+  }
+  .dashboard-header h1 {
+    color: #58a6ff;
+    margin: 0 0 8px 0;
+  }
+  .repo-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .repo-pill {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid #21262d;
+    background: #161b22;
+    color: #8b949e;
+    font-size: 13px;
+    text-decoration: none;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .repo-pill:hover {
+    color: #c9d1d9;
+    border-color: #58a6ff;
+  }
+  .repo-pill-active {
+    color: #e6edf3;
+    border-color: #58a6ff;
+    background: rgba(88, 166, 255, 0.12);
+  }
+  .repo-subtitle {
+    color: #8b949e;
+    margin: 0;
+    font-size: 14px;
+  }
+  .repo-path {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+  }
+  .kpis-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .chart-card {
+    background: #161b22;
+    border: 1px solid #21262d;
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .chart-card.span-2 { grid-column: span 2; }
+  .chart-card h3 {
+    margin: 0 0 16px 0;
+    font-size: 15px;
+    color: #e6edf3;
+    font-weight: 600;
+  }
+  .chart-body {
+    height: 320px;
+    position: relative;
+  }
+  .hot-files {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .hot-file-info {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+  .hot-file-path {
+    font-size: 13px;
+    color: #c9d1d9;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .hot-file-count {
+    font-size: 13px;
+    color: #8b949e;
+    flex-shrink: 0;
+  }
+  .hot-file-bar {
+    height: 6px;
+    background: #21262d;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .hot-file-bar-fill {
+    height: 100%;
+    background: #58a6ff;
+    border-radius: 3px;
+  }
+  .empty { color: #8b949e; font-size: 14px; }
+  .empty code {
+    background: #161b22;
+    border: 1px solid #21262d;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 12px;
+  }
+  @media (max-width: 1200px) {
+    .kpis-grid { grid-template-columns: repeat(3, 1fr); }
+    .charts-grid { grid-template-columns: 1fr; }
+    .chart-card.span-2 { grid-column: span 1; }
+  }
+  @media (max-width: 768px) {
+    .kpis-grid { grid-template-columns: 1fr; }
+  }
+</style>
