@@ -46,7 +46,7 @@ def extract_all(git: GitService, since: datetime | None, until: datetime | None,
     # ── Una sola pasada de git log --numstat ──
     # (mucho más rápido que commit.stats, que calcula el diff de cada commit)
     # El filtro de fechas se hace en git, ANTES del límite de commits.
-    args = ["--numstat", "--pretty=format:%x1e%H%x09%ae%x09%cI"] # cambio %an = author name por %ae = author email
+    args = ["--numstat", "--pretty=format:%x1e%H%x09%ae%x09%an%x09%cI"]
     if since:
         args.append(f"--since={since.strftime('%Y-%m-%d %H:%M:%S')}")
     if until:
@@ -56,19 +56,17 @@ def extract_all(git: GitService, since: datetime | None, until: datetime | None,
 
     # ── KPIs básicos ──
     total_commits = 0
-    authors = set()
+    emails = set()
 
     # ── LOC totales ──
     total_added = 0
     total_deleted = 0
     total_changes = 0
 
-    # ── Commits por autor por mes ──
-    # { "Nico": { "2024-01": 15, "2024-02": 23 } }
+    # ── Commits por autor por mes (agrupado por email) ──
     commits_by_author_month = defaultdict(lambda: defaultdict(int))
 
     # ── LOC por mes ──
-    # { "2024-01": { "added": 12456, "deleted": 8934 } }
     loc_by_month = defaultdict(lambda: {"added": 0, "deleted": 0})
 
     # ── Archivos hot (cuántas veces aparece en commits) ──
@@ -77,32 +75,38 @@ def extract_all(git: GitService, since: datetime | None, until: datetime | None,
     # ── Heatmap (commits por día) ──
     heatmap = Counter()
 
-    # ── Distribución de commits por autor ──
+    # ── Distribución de commits por autor (agrupado por email) ──
     author_commits = Counter()
+
+    # ── Mapeo email → nombre más frecuente ──
+    email_to_names: dict[str, Counter] = defaultdict(Counter)
 
     for record in output.split("\x1e"):
         if not record.strip():
             continue
         lines = record.splitlines()
         meta = lines[0].split("\t")
-        if len(meta) < 3:
+        if len(meta) < 4:
             continue
-        _, author, iso_date = meta[0], meta[1], meta[2]
+        _, email, author_name, iso_date = meta[0], meta[1], meta[2], meta[3]
         try:
             dt = datetime.fromisoformat(iso_date).replace(tzinfo=None)
         except ValueError:
             continue
 
         total_commits += 1
-        authors.add(author)
+        emails.add(email)
         month_key = dt.strftime("%Y-%m")
         day_key = dt.strftime("%Y-%m-%d")
 
-        # Commits por autor por mes
-        commits_by_author_month[author][month_key] += 1
+        # Trackear nombre más frecuente por email
+        email_to_names[email][author_name] += 1
 
-        # Distribución
-        author_commits[author] += 1
+        # Commits por autor por mes (key=email)
+        commits_by_author_month[email][month_key] += 1
+
+        # Distribución (key=email)
+        author_commits[email] += 1
 
         # Heatmap / métricas de vida
         heatmap[day_key] += 1
@@ -163,17 +167,22 @@ def extract_all(git: GitService, since: datetime | None, until: datetime | None,
         for day, count in sorted(heatmap.items())
     ]
 
+    # ── Resolver nombre display para cada email ──
+    def resolve_name(email: str) -> str:
+        names = email_to_names[email]
+        return names.most_common(1)[0][0] if names else email
+
     # Distribución para donut chart
     total_for_pct = sum(author_commits.values())
     distribution = [
-        {"author": author, "commits": count, "percentage": round(count / total_for_pct * 100, 1)}
-        for author, count in author_commits.most_common()
+        {"author": resolve_name(email), "commits": count, "percentage": round(count / total_for_pct * 100, 1)}
+        for email, count in author_commits.most_common()
     ]
 
-    # Commits por autor por mes → formato plano para Chart.js
+    # Commits por autor por mes → formato plano para Chart.js (key=nombre display)
     authors_series = {}
-    for author, months in commits_by_author_month.items():
-        authors_series[author] = [months.get(m, 0) for m in all_months]
+    for email, months in commits_by_author_month.items():
+        authors_series[resolve_name(email)] = [months.get(m, 0) for m in all_months]
 
     return {
         "meta": {
@@ -186,7 +195,7 @@ def extract_all(git: GitService, since: datetime | None, until: datetime | None,
         },
         "kpis": {
             "total_commits": total_commits,
-            "total_authors": len(authors),
+            "total_authors": len(emails),
             "total_added": total_added,
             "total_deleted": total_deleted,
             "total_changes": total_changes,
