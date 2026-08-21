@@ -57,14 +57,27 @@ if (stats) {
   const lineDatasets = topAuthors.map((a, i) => ({
     label: a.author,
     data: a.months,
-    backgroundColor: palette[i % palette.length],
+    borderColor: palette[i % palette.length],
+    backgroundColor: palette[i % palette.length] + "20",
+    borderWidth: 2,
+    tension: 0.3,
+    pointRadius: 3,
+    pointHoverRadius: 5,
+    fill: false,
   }));
 
   if (restAuthors.length > 0) {
     lineDatasets.push({
       label: "Otros",
       data: timeline.months.map((_, i) => restAuthors.reduce((s, a) => s + a.months[i], 0)),
-      backgroundColor: OTROS_COLOR,
+      borderColor: OTROS_COLOR,
+      backgroundColor: OTROS_COLOR + "20",
+      borderWidth: 2,
+      borderDash: [6, 3],
+      tension: 0.3,
+      pointRadius: 3,
+      pointHoverRadius: 5,
+      fill: false,
     });
   }
 
@@ -219,7 +232,7 @@ if (stats) {
         <section class="chart-card span-2">
           <h3>Commits por autor y mes</h3>
           <div class="chart-body">
-            <Chart client:load type="bar" data={commitsBarData} options={commitsBarOptions} />
+            <Chart client:load type="line" data={commitsBarData} options={commitsBarOptions} />
           </div>
         </section>
 
