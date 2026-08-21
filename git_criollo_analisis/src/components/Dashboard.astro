@@ -18,24 +18,59 @@ const { repo, repos, stats } = Astro.props;
 
 const palette = ["#58a6ff", "#f0883e", "#3fb950", "#f85149", "#a371f7", "#d29922", "#f778ba", "#39c5cf"];
 
+const TOP_N = 6;
+const OTROS_COLOR = "#7d8590";
+
 let kpis, life_metrics, timeline, heatmap, hot_files, distribution;
 let commitsBarData, commitsBarOptions;
 let distributionData, distributionOptions;
 let locLineData, locLineOptions;
 let maxFileChanges = 1;
+let totalAuthors = 0;
 
 if (stats) {
   ({ kpis, life_metrics, timeline, heatmap, hot_files, distribution } = stats);
+  totalAuthors = distribution.length;
 
-  const authors = Object.keys(timeline.commits_by_author);
+  const topDistribution = distribution.slice(0, TOP_N);
+  const otherDistribution = distribution.slice(TOP_N);
+
+  const groupedDistribution = otherDistribution.length > 0
+    ? [...topDistribution, {
+        author: "Otros",
+        commits: otherDistribution.reduce((s, d) => s + d.commits, 0),
+        percentage: Math.round(otherDistribution.reduce((s, d) => s + d.percentage, 0) * 10) / 10,
+      }]
+    : topDistribution;
+
+  const sortedAuthors = Object.entries(timeline.commits_by_author)
+    .map(([author, months]) => ({
+      author,
+      total: months.reduce((s, v) => s + v, 0),
+      months,
+    }))
+    .sort((a, b) => b.total - a.total);
+
+  const topAuthors = sortedAuthors.slice(0, TOP_N);
+  const restAuthors = sortedAuthors.slice(TOP_N);
+
+  const lineDatasets = topAuthors.map((a, i) => ({
+    label: a.author,
+    data: a.months,
+    backgroundColor: palette[i % palette.length],
+  }));
+
+  if (restAuthors.length > 0) {
+    lineDatasets.push({
+      label: "Otros",
+      data: timeline.months.map((_, i) => restAuthors.reduce((s, a) => s + a.months[i], 0)),
+      backgroundColor: OTROS_COLOR,
+    });
+  }
 
   commitsBarData = {
     labels: timeline.months,
-    datasets: authors.map((author, i) => ({
-      label: author,
-      data: timeline.commits_by_author[author],
-      backgroundColor: palette[i % palette.length],
-    })),
+    datasets: lineDatasets,
   };
 
   commitsBarOptions = {
@@ -43,17 +78,19 @@ if (stats) {
     maintainAspectRatio: false,
     plugins: { legend: { position: "bottom" } },
     scales: {
-      x: { stacked: true, grid: { display: false } },
-      y: { stacked: true, beginAtZero: true },
+      x: { grid: { display: false } },
+      y: { beginAtZero: true },
     },
   };
 
   distributionData = {
-    labels: distribution.map((d) => d.author),
+    labels: groupedDistribution.map((d) => d.author),
     datasets: [
       {
-        data: distribution.map((d) => d.commits),
-        backgroundColor: distribution.map((_, i) => palette[i % palette.length]),
+        data: groupedDistribution.map((d) => d.commits),
+        backgroundColor: groupedDistribution.map((_, i) =>
+          i < topAuthors.length ? palette[i % palette.length] : OTROS_COLOR
+        ),
         borderWidth: 0,
       },
     ],
@@ -72,18 +109,12 @@ if (stats) {
       {
         label: "Añadidas",
         data: timeline.loc_by_month.added,
-        borderColor: "#3fb950",
-        backgroundColor: "rgba(63, 185, 80, 0.12)",
-        fill: true,
-        tension: 0.3,
+        backgroundColor: "#3fb950",
       },
       {
         label: "Eliminadas",
         data: timeline.loc_by_month.deleted,
-        borderColor: "#f85149",
-        backgroundColor: "rgba(248, 81, 73, 0.12)",
-        fill: true,
-        tension: 0.3,
+        backgroundColor: "#f85149",
       },
     ],
   };
@@ -197,12 +228,15 @@ if (stats) {
           <div class="chart-body">
             <Chart client:load type="doughnut" data={distributionData} options={distributionOptions} />
           </div>
+          {totalAuthors > TOP_N && (
+            <p class="chart-note">{totalAuthors} autores en total</p>
+          )}
         </section>
 
         <section class="chart-card">
           <h3>Líneas por mes</h3>
           <div class="chart-body">
-            <Chart client:load type="line" data={locLineData} options={locLineOptions} />
+            <Chart client:load type="bar" data={locLineData} options={locLineOptions} />
           </div>
         </section>
 

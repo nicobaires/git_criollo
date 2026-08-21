@@ -46,7 +46,7 @@ def extract_all(git: GitService, since: datetime | None, until: datetime | None,
     # ── Una sola pasada de git log --numstat ──
     # (mucho más rápido que commit.stats, que calcula el diff de cada commit)
     # El filtro de fechas se hace en git, ANTES del límite de commits.
-    args = ["--numstat", "--pretty=format:%x1e%H%x09%an%x09%cI"]
+    args = ["--numstat", "--pretty=format:%x1e%H%x09%ae%x09%cI"] # cambio %an = author name por %ae = author email
     if since:
         args.append(f"--since={since.strftime('%Y-%m-%d %H:%M:%S')}")
     if until:
