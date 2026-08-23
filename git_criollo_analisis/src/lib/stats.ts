@@ -11,7 +11,7 @@ export interface Stats {
     until: string | null;
     total_commits_analyzed: number;
     repo_age_days: number;
-    years: number[];
+    years: string[];
   };
   kpis: {
     total_commits: number;
