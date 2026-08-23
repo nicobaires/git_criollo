@@ -38,9 +38,13 @@ export interface Stats {
 
 const STATS_DIR = path.join(findProjectRoot(), "src", "data", "stats");
 
+function sanitizeBranch(branch: string): string {
+  return branch.replace(/\//g, "-");
+}
+
 export function getStats(repoName: string, branch?: string): Stats | null {
   if (branch) {
-    const file = path.join(STATS_DIR, repoName, `${branch}.json`);
+    const file = path.join(STATS_DIR, repoName, `${sanitizeBranch(branch)}.json`);
     try {
       return JSON.parse(fs.readFileSync(file, "utf-8")) as Stats;
     } catch {
