@@ -75,6 +75,31 @@ def extract_all(git: GitService, since: datetime | None, until: datetime | None,
     # ── Archivos hot (cuántas veces aparece en commits) ──
     file_changes = Counter()
 
+    # ── Archivos ignorados para hot_files (no entran en métricas de frecuencia) ──
+    IGNORED_FILES = {
+        ".gitignore", ".gitattributes", ".gitmodules",
+        "pnpm-lock.yaml", "package-lock.json", "yarn.lock",
+        "uv.lock", "poetry.lock", "Pipfile.lock",
+        "composer.lock", "Gemfile.lock",
+        "go.sum", "Cargo.lock",
+    }
+    IGNORED_PREFIXES = (".",)  # archivos que empiezan con .
+    IGNORED_SUFFIXES = {
+        ".json", ".lock", ".sum", ".map", ".min.js", ".min.css",
+        ".svg", ".png", ".jpg", ".jpeg", ".gif", ".ico", ".woff", ".woff2",
+    }
+
+    def is_ignored(path: str) -> bool:
+        base = os.path.basename(path)
+        if base in IGNORED_FILES:
+            return True
+        if base.startswith(".") and base not in {".env", ".env.example"}:
+            return True
+        for suffix in IGNORED_SUFFIXES:
+            if base.endswith(suffix):
+                return True
+        return False
+
     # ── Heatmap (commits por día) ──
     heatmap = Counter()
 
@@ -130,7 +155,8 @@ def extract_all(git: GitService, since: datetime | None, until: datetime | None,
             total_added += added
             total_deleted += deleted
             total_changes += added + deleted
-            file_changes[path] += 1
+            if not is_ignored(path):
+                file_changes[path] += 1
 
     # ── Métricas de "vida" ──
     active_days = set(heatmap.keys())
