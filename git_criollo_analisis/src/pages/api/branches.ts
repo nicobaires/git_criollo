@@ -31,7 +31,7 @@ function readConfig(): Repo[] {
 
 function gitBranches(dir: string): string[] {
   try {
-    const out = execSync("git branch --format=%(refname:short)", {
+    const out = execSync("git branch --format='%(refname:short)'", {
       cwd: dir,
       encoding: "utf-8",
       stdio: ["ignore", "pipe", "ignore"],
@@ -60,7 +60,7 @@ export async function GET({ url }: { url: URL }) {
 
   const branches = gitBranchesList.map((b) => ({
     name: b,
-    hasStats: statsSet.has(b),
+    hasStats: statsSet.has(b.replace(/\//g, "-")),
   }));
 
   return new Response(JSON.stringify({ branches }), {

@@ -1,7 +1,24 @@
 <script lang="ts">
-  let { repo, branches, current } = $props();
+  let { repo, current } = $props();
+  let branches = $state<{ name: string; hasStats: boolean }[]>([]);
   let loading = $state("");
   let open = $state(false);
+
+  async function loadBranches() {
+    try {
+      const res = await fetch(`/api/branches?repo=${encodeURIComponent(repo)}`);
+      const data = await res.json();
+      branches = data.branches ?? [];
+    } catch {
+      branches = [];
+    }
+  }
+
+  $effect(() => {
+    if (open && branches.length === 0) {
+      loadBranches();
+    }
+  });
 
   function switchBranch(branch: string) {
     if (branch === current) { open = false; return; }
@@ -40,31 +57,48 @@
   </button>
 
   {#if open}
-    <div class="absolute top-full left-0 mt-1 bg-gh-card border border-gh-border rounded-xl shadow-lg z-50 py-1 min-w-[200px]">
+    <div class="absolute top-full left-0 mt-1 bg-gh-card border border-gh-border rounded-xl shadow-lg z-50 py-1 min-w-[240px] max-h-[320px] overflow-y-auto">
       {#each branches as b}
-        {#if b === current}
+        {#if b.name === current}
           <button
             type="button"
-            class="w-full text-left px-3 py-1.5 text-[13px] text-gh-accent bg-[rgba(88,166,255,0.1)] cursor-default"
+            class="w-full text-left px-3 py-1.5 text-[13px] text-gh-accent bg-[rgba(88,166,255,0.1)] cursor-default flex items-center gap-2"
             onclick={() => (open = false)}
           >
-            {b}
-            <span class="text-gh-muted text-[11px] ml-1">actual</span>
+            <span class="truncate">{b.name}</span>
+            <span class="text-gh-muted text-[11px] shrink-0">actual</span>
+          </button>
+        {:else if b.hasStats}
+          <button
+            type="button"
+            class="w-full text-left px-3 py-1.5 text-[13px] text-gh-text hover:bg-[rgba(139,148,158,0.1)] cursor-pointer disabled:opacity-50 flex items-center gap-2"
+            disabled={loading !== ""}
+            onclick={() => switchBranch(b.name)}
+          >
+            <span class="truncate">{b.name}</span>
+            {#if loading === b.name}
+              <span class="text-gh-muted text-[11px] shrink-0">cargando...</span>
+            {/if}
           </button>
         {:else}
           <button
             type="button"
-            class="w-full text-left px-3 py-1.5 text-[13px] text-gh-text hover:bg-[rgba(139,148,158,0.1)] cursor-pointer disabled:opacity-50"
+            class="w-full text-left px-3 py-1.5 text-[13px] text-gh-subtle hover:bg-[rgba(139,148,158,0.1)] cursor-pointer disabled:opacity-50 flex items-center gap-2"
             disabled={loading !== ""}
-            onclick={() => switchBranch(b)}
+            onclick={() => generateBranch(b.name)}
           >
-            {b}
-            {#if loading === b}
-              <span class="text-gh-muted text-[11px] ml-1">cargando...</span>
+            <span class="truncate">{b.name}</span>
+            {#if loading === b.name}
+              <span class="text-gh-accent text-[11px] shrink-0">generando...</span>
+            {:else}
+              <span class="text-gh-muted text-[11px] shrink-0">generar</span>
             {/if}
           </button>
         {/if}
       {/each}
+      {#if branches.length === 0 && loading === ""}
+        <p class="px-3 py-1.5 text-[13px] text-gh-muted m-0">Cargando branches...</p>
+      {/if}
     </div>
   {/if}
 </div>

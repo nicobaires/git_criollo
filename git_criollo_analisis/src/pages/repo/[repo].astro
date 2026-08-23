@@ -1,15 +1,13 @@
 ---
 import Dashboard from "../../components/Dashboard.astro";
 import { loadRepos } from "../../lib/repos";
-import { getStats, listBranches } from "../../lib/stats";
+import { getStats } from "../../lib/stats";
 import "../../styles/global.css";
 
 const repos = loadRepos();
 const repo = repos.find((r) => r.name === Astro.params.repo) ?? null;
 const currentBranch = Astro.url.searchParams.get("branch") ?? "";
-const branches = repo ? listBranches(repo.name) : [];
-const branch = currentBranch || (branches.length > 0 ? branches[0] : "");
-const stats = repo ? getStats(repo.name, branch || undefined) : null;
+const stats = repo ? getStats(repo.name, currentBranch || undefined) : null;
 ---
 
 <html lang="es">
@@ -20,7 +18,7 @@ const stats = repo ? getStats(repo.name, branch || undefined) : null;
   </head>
   <body>
     {repo ? (
-      <Dashboard repo={repo} repos={repos} stats={stats} branches={branches} currentBranch={branch} />
+      <Dashboard repo={repo} repos={repos} stats={stats} currentBranch={currentBranch} />
     ) : (
       <main class="max-w-[1400px] mx-auto py-10 px-6">
         <p class="text-gh-muted text-sm">No existe ese repositorio. <a href="/" class="text-gh-accent">Volver al dashboard</a></p>

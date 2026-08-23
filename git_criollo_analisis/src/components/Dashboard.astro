@@ -12,11 +12,10 @@ interface Props {
   repo: Repo | null;
   repos: Repo[];
   stats: Stats | null;
-  branches: string[];
   currentBranch: string;
 }
 
-const { repo, repos, stats, branches, currentBranch } = Astro.props;
+const { repo, repos, stats, currentBranch } = Astro.props;
 
 const palette = ["#58a6ff", "#f0883e", "#3fb950", "#f85149", "#a371f7", "#d29922", "#f778ba", "#39c5cf"];
 
@@ -184,9 +183,7 @@ if (stats) {
             <span> · {stats.timeline.months[0]} a {stats.timeline.months.at(-1)}</span>
           )}
         </p>
-        {branches.length > 0 && (
-          <BranchSelector repo={repo.name} branches={branches} current={currentBranch} client:load />
-        )}
+        <BranchSelector repo={repo.name} current={currentBranch} client:load />
       </div>
     )}
   </header>

@@ -70,7 +70,7 @@ function gitTopLevel(dir: string): string | null {
 
 function gitBranches(dir: string): string[] {
   try {
-    const out = execSync("git branch --format=%(refname:short)", {
+    const out = execSync("git branch --format='%(refname:short)'", {
       cwd: dir,
       encoding: "utf-8",
       stdio: ["ignore", "pipe", "ignore"],
