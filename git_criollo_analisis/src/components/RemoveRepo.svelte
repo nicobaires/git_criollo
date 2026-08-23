@@ -39,10 +39,10 @@
   }
 </script>
 
-<div class="remove-repo">
+<div class="inline-flex items-center gap-2">
   <button
     type="button"
-    class="remove-btn"
+    class="border-none bg-none text-gh-subtle text-xs cursor-pointer py-0.5 pr-2.5 pl-1 rounded-md leading-none transition-colors hover:text-gh-danger hover:bg-[rgba(248,81,73,0.1)]"
     class:remove-btn-confirm={confirming}
     aria-label={confirming ? `Confirmar quitar ${name}` : `Quitar ${name}`}
     disabled={busy}
@@ -52,48 +52,20 @@
     {confirming ? "¿Quitar?" : "✕"}
   </button>
   {#if error}
-    <span class="remove-error" role="alert">{error}</span>
+    <span class="text-gh-danger text-xs" role="alert">{error}</span>
   {/if}
 </div>
 
 <style>
-  .remove-repo {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .remove-btn {
-    border: none;
-    background: none;
-    color: #7d8590;
-    font-size: 12px;
-    cursor: pointer;
-    padding: 2px 10px 2px 4px;
-    border-radius: 6px;
-    line-height: 1;
-    transition: color 0.15s, background 0.15s;
-  }
-  .remove-btn:hover {
-    color: #f85149;
-    background: rgba(248, 81, 73, 0.1);
-  }
   .remove-btn-confirm {
-    color: #0d1117;
-    background: #f85149;
-    font-size: 11px;
+    color: #0d1117 !important;
+    background: #f85149 !important;
+    font-size: 11px !important;
     font-weight: 600;
-    padding: 4px 8px;
+    padding: 4px 8px !important;
   }
   .remove-btn-confirm:hover {
-    color: #0d1117;
-    background: #ff7b72;
-  }
-  .remove-btn:disabled {
-    opacity: 0.6;
-    cursor: default;
-  }
-  .remove-error {
-    color: #f85149;
-    font-size: 12px;
+    color: #0d1117 !important;
+    background: #ff7b72 !important;
   }
 </style>

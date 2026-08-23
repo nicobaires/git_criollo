@@ -1,5 +1,4 @@
 ---
-// src/components/Dashboard.astro
 import KpiCard from './KpiCard.svelte';
 import Chart from './Chart.svelte';
 import Heatmap from './Heatmap.svelte';
@@ -146,19 +145,25 @@ if (stats) {
 }
 ---
 
-<main class="dashboard">
-  <header class="dashboard-header">
-    <div class="header-row">
-      <h1>GitCriollo Analytics</h1>
+<main class="max-w-[1400px] mx-auto py-10 px-6">
+  <header class="mb-8">
+    <div class="flex items-center gap-4 mb-2">
+      <h1 class="text-gh-accent text-2xl font-bold m-0">GitCriollo Analytics</h1>
       <AddRepo client:load />
     </div>
     {repos.length > 0 && repo && (
-      <nav class="repo-nav" aria-label="Repositorios">
+      <nav class="flex flex-wrap gap-2 mb-2" aria-label="Repositorios">
         {repos.map((r) => (
-          <div class="repo-pill-wrap">
+          <div class:list={[
+            "repo-pill-wrap inline-flex items-center rounded-full border border-gh-border bg-gh-card transition-colors hover:border-gh-accent",
+            r.name === repo.name && "border-gh-accent bg-[rgba(88,166,255,0.12)]",
+          ]}>
             <a
               href={`/repo/${r.name}`}
-              class:list={["repo-pill", r.name === repo.name && "repo-pill-active"]}
+              class:list={[
+                "inline-block py-1.5 pl-3.5 pr-1 text-[13px] no-underline transition-colors",
+                r.name === repo.name ? "text-gh-hover" : "text-gh-muted hover:text-gh-text",
+              ]}
               title={r.path}
             >
               {r.name}
@@ -169,32 +174,32 @@ if (stats) {
       </nav>
     )}
     {repo && stats ? (
-      <p class="repo-subtitle">
-        <span class="repo-path" title={repo.path}>{repo.path}</span>
-        <span>· {stats.meta.branch} · {stats.timeline.months[0]} a {stats.timeline.months.at(-1)}</span>
+      <p class="text-gh-muted text-sm m-0">
+        <span class="font-mono text-xs" title={repo.path}>{repo.path}</span>
+        <span> · {stats.meta.branch} · {stats.timeline.months[0]} a {stats.timeline.months.at(-1)}</span>
       </p>
     ) : repo ? (
-      <p class="repo-subtitle">
-        <span class="repo-path" title={repo.path}>{repo.path}</span>
-        <span>· sin datos</span>
+      <p class="text-gh-muted text-sm m-0">
+        <span class="font-mono text-xs" title={repo.path}>{repo.path}</span>
+        <span> · sin datos</span>
       </p>
     ) : null}
   </header>
 
   {!repo ? (
-    <p class="empty">
+    <p class="text-gh-muted text-sm">
       No hay repositorios configurados. Usá <strong>+ Agregar repo</strong> y pegá la
       ruta de una carpeta con un repositorio Git.
     </p>
   ) : !stats ? (
-    <p class="empty">
+    <p class="text-gh-muted text-sm">
       No hay datos para <strong>{repo.name}</strong>. Se están generando o los podés
       generar manualmente con:
-      <code>python script/extract_stats.py --all</code>
+      <code class="bg-gh-card border border-gh-border rounded px-1.5 py-0.5 text-xs">python script/extract_stats.py --all</code>
     </p>
   ) : (
     <>
-      <div class="kpis-grid">
+      <div class="grid grid-cols-5 gap-5 mb-8 max-xl:grid-cols-3 max-md:grid-cols-1">
         <KpiCard
           title="Commits"
           value={kpis.total_commits}
@@ -228,45 +233,45 @@ if (stats) {
         />
       </div>
 
-      <div class="charts-grid">
-        <section class="chart-card span-2">
-          <h3>Commits por autor y mes</h3>
-          <div class="chart-body">
+      <div class="grid grid-cols-2 gap-5 max-xl:grid-cols-1">
+        <section class="bg-gh-card border border-gh-border rounded-xl p-5 col-span-2 max-xl:col-span-1">
+          <h3 class="text-gh-hover text-[15px] font-semibold mt-0 mb-4">Commits por autor y mes</h3>
+          <div class="h-80 relative">
             <Chart client:load type="line" data={commitsBarData} options={commitsBarOptions} />
           </div>
         </section>
 
-        <section class="chart-card">
-          <h3>Distribución por autor</h3>
-          <div class="chart-body">
+        <section class="bg-gh-card border border-gh-border rounded-xl p-5">
+          <h3 class="text-gh-hover text-[15px] font-semibold mt-0 mb-4">Distribución por autor</h3>
+          <div class="h-80 relative">
             <Chart client:load type="doughnut" data={distributionData} options={distributionOptions} />
           </div>
           {totalAuthors > TOP_N && (
-            <p class="chart-note">{totalAuthors} autores en total</p>
+            <p class="text-gh-muted text-xs mt-3 text-center">{totalAuthors} autores en total</p>
           )}
         </section>
 
-        <section class="chart-card">
-          <h3>Líneas por mes</h3>
-          <div class="chart-body">
+        <section class="bg-gh-card border border-gh-border rounded-xl p-5">
+          <h3 class="text-gh-hover text-[15px] font-semibold mt-0 mb-4">Líneas por mes</h3>
+          <div class="h-80 relative">
             <Chart client:load type="bar" data={locLineData} options={locLineOptions} />
           </div>
         </section>
 
-        <section class="chart-card">
-          <h3>Archivos más tocados</h3>
+        <section class="bg-gh-card border border-gh-border rounded-xl p-5">
+          <h3 class="text-gh-hover text-[15px] font-semibold mt-0 mb-4">Archivos más tocados</h3>
           {hot_files.length === 0 ? (
-            <p class="empty">Sin datos</p>
+            <p class="text-gh-muted text-sm">Sin datos</p>
           ) : (
-            <div class="hot-files">
+            <div class="flex flex-col gap-3">
               {hot_files.map((f) => (
                 <div>
-                  <div class="hot-file-info">
-                    <span class="hot-file-path">📄 {f.path}</span>
-                    <span class="hot-file-count">{f.changes}</span>
+                  <div class="flex justify-between gap-3 mb-1">
+                    <span class="text-[13px] text-gh-text overflow-hidden text-ellipsis whitespace-nowrap">📄 {f.path}</span>
+                    <span class="text-[13px] text-gh-muted shrink-0">{f.changes}</span>
                   </div>
-                  <div class="hot-file-bar">
-                    <div class="hot-file-bar-fill" style={`width: ${(f.changes / maxFileChanges) * 100}%`} />
+                  <div class="h-1.5 bg-gh-border rounded-[3px] overflow-hidden">
+                    <div class="h-full bg-gh-accent rounded-[3px]" style={`width: ${(f.changes / maxFileChanges) * 100}%`} />
                   </div>
                 </div>
               ))}
@@ -274,8 +279,8 @@ if (stats) {
           )}
         </section>
 
-        <section class="chart-card span-2">
-          <h3>Actividad diaria</h3>
+        <section class="bg-gh-card border border-gh-border rounded-xl p-5 col-span-2 max-xl:col-span-1">
+          <h3 class="text-gh-hover text-[15px] font-semibold mt-0 mb-4">Actividad diaria</h3>
           <Heatmap data={heatmap} />
         </section>
       </div>
@@ -284,154 +289,8 @@ if (stats) {
 </main>
 
 <style>
-  body {
-    margin: 0;
-    background: #0d1117;
-    color: #c9d1d9;
-    font-family: -apple-system, system-ui, sans-serif;
-  }
-  .dashboard {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 40px 24px;
-  }
-  .dashboard-header {
-    margin-bottom: 32px;
-  }
-  .header-row {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 8px;
-  }
-  .dashboard-header h1 {
-    color: #58a6ff;
-    margin: 0;
-  }
-  .repo-nav {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 8px;
-  }
-  .repo-pill-wrap {
-    display: inline-flex;
-    align-items: center;
-    border-radius: 999px;
-    border: 1px solid #21262d;
-    background: #161b22;
-    transition: border-color 0.15s;
-  }
-  .repo-pill-wrap:hover {
-    border-color: #58a6ff;
-  }
-  .repo-pill {
-    display: inline-block;
-    padding: 6px 4px 6px 14px;
-    color: #8b949e;
-    font-size: 13px;
-    text-decoration: none;
-    transition: color 0.15s;
-  }
-  .repo-pill:hover {
-    color: #c9d1d9;
-  }
-  .repo-pill-active {
-    color: #e6edf3;
-  }
-  .repo-pill-wrap:has(.repo-pill-active) {
-    border-color: #58a6ff;
-    background: rgba(88, 166, 255, 0.12);
-  }
   .repo-pill-wrap:has(:global(.remove-btn-confirm)) {
     border-color: #f85149;
     background: rgba(248, 81, 73, 0.1);
-  }
-  .repo-subtitle {
-    color: #8b949e;
-    margin: 0;
-    font-size: 14px;
-  }
-  .repo-path {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 12px;
-  }
-  .kpis-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 20px;
-    margin-bottom: 32px;
-  }
-  .charts-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-  }
-  .chart-card {
-    background: #161b22;
-    border: 1px solid #21262d;
-    border-radius: 12px;
-    padding: 20px;
-  }
-  .chart-card.span-2 { grid-column: span 2; }
-  .chart-card h3 {
-    margin: 0 0 16px 0;
-    font-size: 15px;
-    color: #e6edf3;
-    font-weight: 600;
-  }
-  .chart-body {
-    height: 320px;
-    position: relative;
-  }
-  .hot-files {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .hot-file-info {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 4px;
-  }
-  .hot-file-path {
-    font-size: 13px;
-    color: #c9d1d9;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .hot-file-count {
-    font-size: 13px;
-    color: #8b949e;
-    flex-shrink: 0;
-  }
-  .hot-file-bar {
-    height: 6px;
-    background: #21262d;
-    border-radius: 3px;
-    overflow: hidden;
-  }
-  .hot-file-bar-fill {
-    height: 100%;
-    background: #58a6ff;
-    border-radius: 3px;
-  }
-  .empty { color: #8b949e; font-size: 14px; }
-  .empty code {
-    background: #161b22;
-    border: 1px solid #21262d;
-    border-radius: 4px;
-    padding: 2px 6px;
-    font-size: 12px;
-  }
-  @media (max-width: 1200px) {
-    .kpis-grid { grid-template-columns: repeat(3, 1fr); }
-    .charts-grid { grid-template-columns: 1fr; }
-    .chart-card.span-2 { grid-column: span 1; }
-  }
-  @media (max-width: 768px) {
-    .kpis-grid { grid-template-columns: 1fr; }
   }
 </style>

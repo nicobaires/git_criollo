@@ -26,19 +26,6 @@
   });
 </script>
 
-<div class="chart-container">
-  <canvas bind:this={canvas}></canvas>
+<div class="relative w-full h-full">
+  <canvas class="block w-full h-full" bind:this={canvas}></canvas>
 </div>
-
-<style>
-  .chart-container {
-    position: relative;
-    width: 100%;
-    height: 100%;
-  }
-  canvas {
-    display: block;
-    width: 100% !important;
-    height: 100% !important;
-  }
-</style>

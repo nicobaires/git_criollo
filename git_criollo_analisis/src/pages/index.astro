@@ -1,8 +1,8 @@
 ---
-// src/pages/index.astro
 import Dashboard from "../components/Dashboard.astro";
 import { loadRepos } from "../lib/repos";
 import { getStats } from "../lib/stats";
+import "../styles/global.css";
 
 const repos = loadRepos();
 const repo = repos[0] ?? null;

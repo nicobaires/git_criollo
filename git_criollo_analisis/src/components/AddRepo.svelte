@@ -37,88 +37,32 @@
   }
 </script>
 
-<div class="add-repo">
+<div class="ml-auto">
   {#if !open}
-    <button type="button" class="add-btn" onclick={() => (open = true)}>
+    <button type="button" class="rounded-full border border-gh-border bg-gh-card text-gh-text text-[13px] px-3.5 py-1.5 cursor-pointer transition-colors hover:text-gh-hover hover:border-gh-accent" onclick={() => (open = true)}>
       + Agregar repo
     </button>
   {:else}
-    <form class="add-form" onsubmit={(e) => { e.preventDefault(); submit(); }}>
+    <form class="flex gap-2 flex-wrap" onsubmit={(e) => { e.preventDefault(); submit(); }}>
       <input
         type="text"
-        class="add-input"
+        class="py-1.5 px-3 rounded-lg border border-gh-border bg-gh-bg text-gh-text font-mono text-[13px] min-w-[260px] outline-none focus:border-gh-accent"
         bind:value={repoPath}
         placeholder="/ruta/al/repo"
         aria-label="Ruta de la carpeta del repositorio"
       />
-      <button type="submit" class="add-btn" disabled={loading}>
+      <button type="submit" class="rounded-full border border-gh-border bg-gh-card text-gh-text text-[13px] px-3.5 py-1.5 cursor-pointer transition-colors hover:text-gh-hover hover:border-gh-accent disabled:opacity-60 disabled:cursor-default" disabled={loading}>
         {loading ? "Verificando..." : "Agregar"}
       </button>
-      <button type="button" class="add-btn add-btn-ghost" onclick={cancel}>
+      <button type="button" class="rounded-full border border-gh-border bg-gh-card text-gh-muted text-[13px] px-3.5 py-1.5 cursor-pointer transition-colors hover:text-gh-hover hover:border-gh-accent" onclick={cancel}>
         Cancelar
       </button>
     </form>
   {/if}
   {#if error}
-    <p class="add-error">{error}</p>
+    <p class="text-gh-danger text-[13px] mt-2">{error}</p>
   {/if}
   {#if success}
-    <p class="add-success">{success}</p>
+    <p class="text-gh-success text-[13px] mt-2">{success}</p>
   {/if}
 </div>
-
-<style>
-  .add-repo {
-    margin-left: auto;
-  }
-  .add-btn {
-    padding: 6px 14px;
-    border-radius: 999px;
-    border: 1px solid #21262d;
-    background: #161b22;
-    color: #c9d1d9;
-    font-size: 13px;
-    cursor: pointer;
-    transition: color 0.15s, border-color 0.15s;
-  }
-  .add-btn:hover:not(:disabled) {
-    color: #e6edf3;
-    border-color: #58a6ff;
-  }
-  .add-btn:disabled {
-    opacity: 0.6;
-    cursor: default;
-  }
-  .add-btn-ghost {
-    color: #8b949e;
-  }
-  .add-form {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  .add-input {
-    padding: 6px 12px;
-    border-radius: 8px;
-    border: 1px solid #21262d;
-    background: #0d1117;
-    color: #c9d1d9;
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 13px;
-    min-width: 260px;
-  }
-  .add-input:focus {
-    outline: none;
-    border-color: #58a6ff;
-  }
-  .add-error {
-    color: #f85149;
-    font-size: 13px;
-    margin: 8px 0 0;
-  }
-  .add-success {
-    color: #3fb950;
-    font-size: 13px;
-    margin: 8px 0 0;
-  }
-</style>

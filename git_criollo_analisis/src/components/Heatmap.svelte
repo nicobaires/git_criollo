@@ -1,11 +1,8 @@
 <script>
-  // Heatmap de actividad estilo GitHub, renderizado server-side (sin JS).
-  // data: [{ date: "YYYY-MM-DD", count: n }, ...]
-  // Rango dinámico: lunes de la semana del primer día activo → hoy.
-  let { data = [] } = $props();
-
   const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
   const DIAS = ["L", "M", "X", "J", "V", "S", "D"];
+
+  let { data = [] } = $props();
 
   function fmt(d) {
     const y = d.getFullYear();
@@ -14,8 +11,6 @@
     return `${y}-${m}-${day}`;
   }
 
-  // parsea "YYYY-MM-DD" como fecha LOCAL (new Date("YYYY-MM-DD") es UTC y
-  // desplaza el día en husos negativos: medianoche UTC = 21:00 del día anterior)
   function parseDate(key) {
     const [y, m, d] = key.split("-").map(Number);
     return new Date(y, m - 1, d);
@@ -33,7 +28,7 @@
     let start;
     if (data.length) {
       const first = parseDate([...data.map((d) => d.date)].sort()[0]);
-      const dow = (first.getDay() + 6) % 7; // lunes = 0
+      const dow = (first.getDay() + 6) % 7;
       start = new Date(first);
       start.setDate(first.getDate() - dow);
     } else {
@@ -79,33 +74,35 @@
 
     return { counts, maxCount, totalCommits, topDay, hasData, weeks, monthLabels };
   });
+
+  const levelBg = ["bg-heat-0", "bg-heat-1", "bg-heat-2", "bg-heat-3", "bg-heat-4"];
 </script>
 
 {#if !hasData}
-  <p class="empty">Sin actividad en el periodo analizado</p>
+  <p class="text-gh-muted text-sm">Sin actividad en el periodo analizado</p>
 {:else}
-  <div class="heatmap-summary">
+  <div class="text-gh-muted text-xs mb-3">
     {counts.size} días activos · {totalCommits} commits
     {#if topDay}· pico de {topDay.count} el {topDay.date}{/if}
   </div>
-  <div class="heatmap">
-    <div class="heatmap-months">
+  <div class="flex flex-col gap-1">
+    <div class="flex gap-[3px] ml-5">
       {#each weeks as _, wi}
-        <span class="heatmap-month-label">{monthLabels[wi]}</span>
+        <span class="flex-none w-3 text-[10px] text-gh-muted whitespace-nowrap">{monthLabels[wi]}</span>
       {/each}
     </div>
-    <div class="heatmap-body">
-      <div class="heatmap-days">
+    <div class="flex gap-1.5">
+      <div class="flex flex-col gap-[3px]">
         {#each DIAS as d}
-          <span class="heatmap-day-label">{d}</span>
+          <span class="w-2.5 text-[10px] leading-3 text-gh-muted text-center">{d}</span>
         {/each}
       </div>
-      <div class="heatmap-grid">
+      <div class="flex gap-[3px] overflow-x-auto pb-1">
         {#each weeks as week}
-          <div class="heatmap-week">
+          <div class="flex flex-col gap-[3px]">
             {#each week as cell}
               <div
-                class="heatmap-cell level-{cell.level}"
+                class="w-3 h-3 rounded-sm {levelBg[cell.level]}"
                 title="{cell.key}: {cell.count} commit{cell.count === 1 ? "" : "s"}"
               ></div>
             {/each}
@@ -113,88 +110,12 @@
         {/each}
       </div>
     </div>
-    <div class="heatmap-legend">
+    <div class="flex items-center gap-1 mt-2 text-[11px] text-gh-muted">
       <span>Menos</span>
-      <span class="heatmap-cell level-0"></span>
-      <span class="heatmap-cell level-1"></span>
-      <span class="heatmap-cell level-2"></span>
-      <span class="heatmap-cell level-3"></span>
-      <span class="heatmap-cell level-4"></span>
+      {#each [0,1,2,3,4] as l}
+        <span class="w-2.5 h-2.5 {levelBg[l]}"></span>
+      {/each}
       <span>Más</span>
     </div>
   </div>
 {/if}
-
-<style>
-  .empty { color: #8b949e; font-size: 14px; }
-  .heatmap-summary {
-    color: #8b949e;
-    font-size: 12px;
-    margin-bottom: 12px;
-  }
-  .heatmap {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .heatmap-months {
-    display: flex;
-    gap: 3px;
-    margin-left: 20px;
-  }
-  .heatmap-month-label {
-    flex: 0 0 12px;
-    font-size: 10px;
-    color: #8b949e;
-    white-space: nowrap;
-  }
-  .heatmap-body {
-    display: flex;
-    gap: 6px;
-  }
-  .heatmap-days {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-  .heatmap-day-label {
-    width: 10px;
-    font-size: 10px;
-    line-height: 12px;
-    color: #8b949e;
-    text-align: center;
-  }
-  .heatmap-grid {
-    display: flex;
-    gap: 3px;
-    overflow-x: auto;
-    padding-bottom: 4px;
-  }
-  .heatmap-week {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-  .heatmap-cell {
-    width: 12px;
-    height: 12px;
-    border-radius: 2px;
-    background: #161b22;
-  }
-  .level-1 { background: #0e4429; }
-  .level-2 { background: #006d32; }
-  .level-3 { background: #26a641; }
-  .level-4 { background: #39d353; }
-  .heatmap-legend {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin-top: 8px;
-    font-size: 11px;
-    color: #8b949e;
-  }
-  .heatmap-legend .heatmap-cell {
-    width: 10px;
-    height: 10px;
-  }
-</style>
