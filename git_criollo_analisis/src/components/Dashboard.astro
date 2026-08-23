@@ -5,6 +5,7 @@ import Heatmap from './Heatmap.svelte';
 import AddRepo from './AddRepo.svelte';
 import RemoveRepo from './RemoveRepo.svelte';
 import BranchSelector from './BranchSelector.svelte';
+import YearSelector from './YearSelector.svelte';
 import type { Repo } from '../lib/repos';
 import type { Stats } from '../lib/stats';
 
@@ -13,9 +14,10 @@ interface Props {
   repos: Repo[];
   stats: Stats | null;
   currentBranch: string;
+  currentYear: string;
 }
 
-const { repo, repos, stats, currentBranch } = Astro.props;
+const { repo, repos, stats, currentBranch, currentYear } = Astro.props;
 
 const palette = ["#58a6ff", "#f0883e", "#3fb950", "#f85149", "#a371f7", "#d29922", "#f778ba", "#39c5cf"];
 
@@ -23,16 +25,213 @@ const TOP_N = 6;
 const OTROS_COLOR = "#7d8590";
 
 let kpis, life_metrics, timeline, heatmap, hot_files, distribution;
-let commitsBarData, commitsBarOptions;
+let commitsData, commitsOptions;
 let distributionData, distributionOptions;
-let locLineData, locLineOptions;
+let locData, locOptions;
 let maxFileChanges = 1;
 let totalAuthors = 0;
+let granularity = "month";
+let chartTitle = "";
+let locTitle = "";
+let timeRangeLabel = "";
+let displayKpis = { total_commits: 0, total_authors: 0, total_added: 0, total_deleted: 0, total_changes: 0 };
+let filteredHeatmap: { date: string; count: number }[] = [];
+let filterYear: number | null = null;
+let years: string[] = [];
 
 if (stats) {
   ({ kpis, life_metrics, timeline, heatmap, hot_files, distribution } = stats);
   totalAuthors = distribution.length;
 
+  // ── Determinar granularidad ──
+  const age = stats.meta.repo_age_days;
+  if (age <= 30) {
+    granularity = "day";
+  } else if (age <= 180) {
+    granularity = "week";
+  } else {
+    granularity = "month";
+  }
+
+  // ── Determinar años ──
+  years = stats.meta.years;
+  const hasMultipleYears = years.length > 1;
+  filterYear = currentYear !== "all" ? parseInt(currentYear) : null;
+
+  // ── Filtrar heatmap por año ──
+  filteredHeatmap = heatmap;
+  if (filterYear) {
+    filteredHeatmap = heatmap.filter((h) => new Date(h.date).getFullYear() === filterYear);
+  }
+
+  // ── Helper: filtrar array de keys por año ──
+  function filterByYear<T extends string>(keys: T[], year: number | null): T[] {
+    if (!year) return keys;
+    return keys.filter((k) => {
+      const y = granularity === "day"
+        ? parseInt(k.slice(0, 4))
+        : granularity === "week"
+          ? parseInt(k.slice(0, 4))
+          : parseInt(k.slice(0, 4));
+      return y === year;
+    });
+  }
+
+  // ── Helper: filtrar array de values por índices de keys filtradas ──
+  function filterValues<T>(allKeys: string[], filteredKeys: string[], values: T[]): T[] {
+    if (filteredKeys.length === allKeys.length) return values;
+    const filteredSet = new Set(filteredKeys);
+    return allKeys.reduce<T[]>((acc, key, i) => {
+      if (filteredSet.has(key)) acc.push(values[i]);
+      return acc;
+    }, []);
+  }
+
+  // ── Seleccionar datos según granularidad ──
+  const { labels, commitsSeries, locLabels, locAdded, locDeleted, periodName } = (() => {
+    if (granularity === "day") {
+      const allKeys = timeline.days;
+      const fKeys = filterByYear(allKeys, filterYear);
+      return {
+        labels: fKeys,
+        commitsSeries: timeline.commits_by_author_day,
+        locLabels: fKeys,
+        locAdded: filterValues(allKeys, fKeys, timeline.loc_by_day.added),
+        locDeleted: filterValues(allKeys, fKeys, timeline.loc_by_day.deleted),
+        periodName: "día",
+      };
+    } else if (granularity === "week") {
+      const allKeys = timeline.weeks;
+      const fKeys = filterByYear(allKeys, filterYear);
+      return {
+        labels: fKeys,
+        commitsSeries: timeline.commits_by_author_week,
+        locLabels: fKeys,
+        locAdded: filterValues(allKeys, fKeys, timeline.loc_by_week.added),
+        locDeleted: filterValues(allKeys, fKeys, timeline.loc_by_week.deleted),
+        periodName: "semana",
+      };
+    } else {
+      const allKeys = timeline.months;
+      const fKeys = filterByYear(allKeys, filterYear);
+      return {
+        labels: fKeys,
+        commitsSeries: timeline.commits_by_author,
+        locLabels: fKeys,
+        locAdded: filterValues(allKeys, fKeys, timeline.loc_by_month.added),
+        locDeleted: filterValues(allKeys, fKeys, timeline.loc_by_month.deleted),
+        periodName: "mes",
+      };
+    }
+  })();
+
+  chartTitle = `Commits por autor y ${periodName}`;
+  locTitle = `Líneas por ${periodName}`;
+
+  if (filterYear) {
+    timeRangeLabel = ` (${filterYear})`;
+  } else if (hasMultipleYears) {
+    timeRangeLabel = " (todos los años)";
+  }
+
+  // ── KPIs filtrados por año ──
+  displayKpis = kpis;
+  if (filterYear && granularity === "day") {
+    const yearDays = new Set(
+      heatmap.filter((h) => new Date(h.date).getFullYear() === filterYear).map((h) => h.date)
+    );
+    let yAdded = 0, yDeleted = 0, yChanges = 0, yCommits = 0;
+    for (const d of timeline.days) {
+      if (new Date(d).getFullYear() === filterYear) {
+        const idx = timeline.loc_by_day.days.indexOf(d);
+        if (idx >= 0) {
+          yAdded += timeline.loc_by_day.added[idx];
+          yDeleted += timeline.loc_by_day.deleted[idx];
+          yChanges += timeline.loc_by_day.added[idx] + timeline.loc_by_day.deleted[idx];
+        }
+      }
+    }
+    for (const [email, days] of Object.entries(commitsSeries)) {
+      const allKeys = timeline.days;
+      const fKeys = filterByYear(allKeys, filterYear);
+      yCommits += filterValues(allKeys, fKeys, days).reduce((s, v) => s + v, 0);
+    }
+    const yearAuthors = new Set<string>();
+    for (const [email, days] of Object.entries(commitsSeries)) {
+      const allKeys = timeline.days;
+      const fKeys = filterByYear(allKeys, filterYear);
+      if (filterValues(allKeys, fKeys, days).some((v) => v > 0)) yearAuthors.add(email);
+    }
+    displayKpis = {
+      total_commits: yCommits,
+      total_authors: yearAuthors.size,
+      total_added: yAdded,
+      total_deleted: yDeleted,
+      total_changes: yChanges,
+    };
+  } else if (filterYear && granularity === "week") {
+    let yAdded = 0, yDeleted = 0, yChanges = 0, yCommits = 0;
+    for (const w of timeline.weeks) {
+      if (w.startsWith(String(filterYear))) {
+        const idx = timeline.loc_by_week.weeks.indexOf(w);
+        if (idx >= 0) {
+          yAdded += timeline.loc_by_week.added[idx];
+          yDeleted += timeline.loc_by_week.deleted[idx];
+          yChanges += timeline.loc_by_week.added[idx] + timeline.loc_by_week.deleted[idx];
+        }
+      }
+    }
+    for (const [email, weeks] of Object.entries(commitsSeries)) {
+      const allKeys = timeline.weeks;
+      const fKeys = filterByYear(allKeys, filterYear);
+      yCommits += filterValues(allKeys, fKeys, weeks).reduce((s, v) => s + v, 0);
+    }
+    const yearAuthors = new Set<string>();
+    for (const [email, weeks] of Object.entries(commitsSeries)) {
+      const allKeys = timeline.weeks;
+      const fKeys = filterByYear(allKeys, filterYear);
+      if (filterValues(allKeys, fKeys, weeks).some((v) => v > 0)) yearAuthors.add(email);
+    }
+    displayKpis = {
+      total_commits: yCommits,
+      total_authors: yearAuthors.size,
+      total_added: yAdded,
+      total_deleted: yDeleted,
+      total_changes: yChanges,
+    };
+  } else if (filterYear && granularity === "month") {
+    let yAdded = 0, yDeleted = 0, yChanges = 0, yCommits = 0;
+    for (const m of timeline.months) {
+      if (m.startsWith(String(filterYear))) {
+        const idx = timeline.loc_by_month.months.indexOf(m);
+        if (idx >= 0) {
+          yAdded += timeline.loc_by_month.added[idx];
+          yDeleted += timeline.loc_by_month.deleted[idx];
+          yChanges += timeline.loc_by_month.added[idx] + timeline.loc_by_month.deleted[idx];
+        }
+      }
+    }
+    for (const [email, months] of Object.entries(commitsSeries)) {
+      const allKeys = timeline.months;
+      const fKeys = filterByYear(allKeys, filterYear);
+      yCommits += filterValues(allKeys, fKeys, months).reduce((s, v) => s + v, 0);
+    }
+    const yearAuthors = new Set<string>();
+    for (const [email, months] of Object.entries(commitsSeries)) {
+      const allKeys = timeline.months;
+      const fKeys = filterByYear(allKeys, filterYear);
+      if (filterValues(allKeys, fKeys, months).some((v) => v > 0)) yearAuthors.add(email);
+    }
+    displayKpis = {
+      total_commits: yCommits,
+      total_authors: yearAuthors.size,
+      total_added: yAdded,
+      total_deleted: yDeleted,
+      total_changes: yChanges,
+    };
+  }
+
+  // ── Distribution ──
   const topDistribution = distribution.slice(0, TOP_N);
   const otherDistribution = distribution.slice(TOP_N);
 
@@ -44,11 +243,12 @@ if (stats) {
       }]
     : topDistribution;
 
-  const sortedAuthors = Object.entries(timeline.commits_by_author)
-    .map(([author, months]) => ({
+  // ── Commits chart (line) ──
+  const sortedAuthors = Object.entries(commitsSeries)
+    .map(([author, values]) => ({
       author,
-      total: months.reduce((s, v) => s + v, 0),
-      months,
+      total: values.reduce((s, v) => s + v, 0),
+      values,
     }))
     .sort((a, b) => b.total - a.total);
 
@@ -57,12 +257,12 @@ if (stats) {
 
   const lineDatasets = topAuthors.map((a, i) => ({
     label: a.author,
-    data: a.months,
+    data: a.values,
     borderColor: palette[i % palette.length],
     backgroundColor: palette[i % palette.length] + "20",
     borderWidth: 2,
     tension: 0.3,
-    pointRadius: 3,
+    pointRadius: labels.length > 30 ? 0 : 3,
     pointHoverRadius: 5,
     fill: false,
   }));
@@ -70,33 +270,31 @@ if (stats) {
   if (restAuthors.length > 0) {
     lineDatasets.push({
       label: "Otros",
-      data: timeline.months.map((_, i) => restAuthors.reduce((s, a) => s + a.months[i], 0)),
+      data: labels.map((_, i) => restAuthors.reduce((s, a) => s + a.values[i], 0)),
       borderColor: OTROS_COLOR,
       backgroundColor: OTROS_COLOR + "20",
       borderWidth: 2,
       borderDash: [6, 3],
       tension: 0.3,
-      pointRadius: 3,
+      pointRadius: labels.length > 30 ? 0 : 3,
       pointHoverRadius: 5,
       fill: false,
     });
   }
 
-  commitsBarData = {
-    labels: timeline.months,
-    datasets: lineDatasets,
-  };
+  commitsData = { labels, datasets: lineDatasets };
 
-  commitsBarOptions = {
+  commitsOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: { legend: { position: "bottom" } },
     scales: {
-      x: { grid: { display: false } },
+      x: { grid: { display: false }, ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 20 } },
       y: { beginAtZero: true },
     },
   };
 
+  // ── Distribution chart (doughnut) ──
   distributionData = {
     labels: groupedDistribution.map((d) => d.author),
     datasets: [
@@ -117,28 +315,21 @@ if (stats) {
     plugins: { legend: { position: "bottom" } },
   };
 
-  locLineData = {
-    labels: timeline.loc_by_month.months,
+  // ── LOC chart (bar) ──
+  locData = {
+    labels: locLabels,
     datasets: [
-      {
-        label: "Añadidas",
-        data: timeline.loc_by_month.added,
-        backgroundColor: "#3fb950",
-      },
-      {
-        label: "Eliminadas",
-        data: timeline.loc_by_month.deleted,
-        backgroundColor: "#f85149",
-      },
+      { label: "Añadidas", data: locAdded, backgroundColor: "#3fb950" },
+      { label: "Eliminadas", data: locDeleted, backgroundColor: "#f85149" },
     ],
   };
 
-  locLineOptions = {
+  locOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: { legend: { position: "bottom" } },
     scales: {
-      x: { grid: { display: false } },
+      x: { grid: { display: false }, ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 20 } },
       y: { beginAtZero: true },
     },
   };
@@ -184,6 +375,9 @@ if (stats) {
           )}
         </p>
         <BranchSelector repo={repo.name} current={currentBranch} client:load />
+        {stats && stats.meta.years.length > 1 && (
+          <YearSelector repo={repo.name} years={stats.meta.years} current={currentYear} currentBranch={currentBranch} client:load />
+        )}
       </div>
     )}
   </header>
@@ -204,32 +398,32 @@ if (stats) {
       <div class="grid grid-cols-5 gap-5 mb-8 max-xl:grid-cols-3 max-md:grid-cols-1">
         <KpiCard
           title="Commits"
-          value={kpis.total_commits}
+          value={displayKpis.total_commits}
           subtitle={`↑ Actividad en ${life_metrics.active_days} días`}
           icon="📝"
           color="#58a6ff"
         />
         <KpiCard
           title="Desarrolladores"
-          value={kpis.total_authors}
+          value={displayKpis.total_authors}
           icon="👥"
           color="#f0883e"
         />
         <KpiCard
           title="Lineas añadidas"
-          value={kpis.total_added}
+          value={displayKpis.total_added}
           icon="➕"
           color="#3fb950"
         />
         <KpiCard
           title="Lineas eliminadas"
-          value={kpis.total_deleted}
+          value={displayKpis.total_deleted}
           icon="➖"
           color="#f85149"
         />
         <KpiCard
           title="Total cambios"
-          value={kpis.total_changes}
+          value={displayKpis.total_changes}
           icon="📈"
           color="#a371f7"
         />
@@ -237,9 +431,9 @@ if (stats) {
 
       <div class="grid grid-cols-2 gap-5 max-xl:grid-cols-1">
         <section class="bg-gh-card border border-gh-border rounded-xl p-5 col-span-2 max-xl:col-span-1">
-          <h3 class="text-gh-hover text-[15px] font-semibold mt-0 mb-4">Commits por autor y mes</h3>
+          <h3 class="text-gh-hover text-[15px] font-semibold mt-0 mb-4">{chartTitle}{timeRangeLabel}</h3>
           <div class="h-80 relative">
-            <Chart client:load type="line" data={commitsBarData} options={commitsBarOptions} />
+            <Chart client:load type="line" data={commitsData} options={commitsOptions} />
           </div>
         </section>
 
@@ -254,9 +448,9 @@ if (stats) {
         </section>
 
         <section class="bg-gh-card border border-gh-border rounded-xl p-5">
-          <h3 class="text-gh-hover text-[15px] font-semibold mt-0 mb-4">Líneas por mes</h3>
+          <h3 class="text-gh-hover text-[15px] font-semibold mt-0 mb-4">{locTitle}{timeRangeLabel}</h3>
           <div class="h-80 relative">
-            <Chart client:load type="bar" data={locLineData} options={locLineOptions} />
+            <Chart client:load type="bar" data={locData} options={locOptions} />
           </div>
         </section>
 
@@ -283,7 +477,20 @@ if (stats) {
 
         <section class="bg-gh-card border border-gh-border rounded-xl p-5 col-span-2 max-xl:col-span-1">
           <h3 class="text-gh-hover text-[15px] font-semibold mt-0 mb-4">Actividad diaria</h3>
-          <Heatmap data={heatmap} />
+          {filterYear ? (
+            <Heatmap data={filteredHeatmap} year={filterYear} />
+          ) : (
+            years.map((y) => {
+              const yearNum = parseInt(y);
+              const yearData = heatmap.filter((h) => new Date(h.date).getFullYear() === yearNum);
+              return (
+                <div class="mb-4">
+                  <p class="text-gh-accent text-sm font-semibold mb-2">{y}</p>
+                  <Heatmap data={yearData} year={yearNum} />
+                </div>
+              );
+            })
+          )}
         </section>
       </div>
     </>

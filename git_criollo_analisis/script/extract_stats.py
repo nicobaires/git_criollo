@@ -69,8 +69,20 @@ def extract_all(git: GitService, since: datetime | None, until: datetime | None,
     # ── Commits por autor por mes (agrupado por email) ──
     commits_by_author_month = defaultdict(lambda: defaultdict(int))
 
+    # ── Commits por autor por semana (ISO week) ──
+    commits_by_author_week = defaultdict(lambda: defaultdict(int))
+
+    # ── Commits por autor por día ──
+    commits_by_author_day = defaultdict(lambda: defaultdict(int))
+
     # ── LOC por mes ──
     loc_by_month = defaultdict(lambda: {"added": 0, "deleted": 0})
+
+    # ── LOC por semana ──
+    loc_by_week = defaultdict(lambda: {"added": 0, "deleted": 0})
+
+    # ── LOC por día ──
+    loc_by_day = defaultdict(lambda: {"added": 0, "deleted": 0})
 
     # ── Archivos hot (cuántas veces aparece en commits) ──
     file_changes = Counter()
@@ -125,6 +137,7 @@ def extract_all(git: GitService, since: datetime | None, until: datetime | None,
         total_commits += 1
         emails.add(email)
         month_key = dt.strftime("%Y-%m")
+        week_key = dt.strftime("%G-W%V")
         day_key = dt.strftime("%Y-%m-%d")
 
         # Trackear nombre más frecuente por email
@@ -132,6 +145,12 @@ def extract_all(git: GitService, since: datetime | None, until: datetime | None,
 
         # Commits por autor por mes (key=email)
         commits_by_author_month[email][month_key] += 1
+
+        # Commits por autor por semana
+        commits_by_author_week[email][week_key] += 1
+
+        # Commits por autor por día
+        commits_by_author_day[email][day_key] += 1
 
         # Distribución (key=email)
         author_commits[email] += 1
@@ -152,6 +171,10 @@ def extract_all(git: GitService, since: datetime | None, until: datetime | None,
                 continue  # '-' = cambio binario, se cuenta como 0
             loc_by_month[month_key]["added"] += added
             loc_by_month[month_key]["deleted"] += deleted
+            loc_by_week[week_key]["added"] += added
+            loc_by_week[week_key]["deleted"] += deleted
+            loc_by_day[day_key]["added"] += added
+            loc_by_day[day_key]["deleted"] += deleted
             total_added += added
             total_deleted += deleted
             total_changes += added + deleted
@@ -181,8 +204,16 @@ def extract_all(git: GitService, since: datetime | None, until: datetime | None,
         freq = 0
 
     # ── Formatear salida ──
-    # Ordenar meses para las series temporales
+    # Ordenar periodos para las series temporales
     all_months = sorted(loc_by_month.keys())
+    all_weeks = sorted(loc_by_week.keys())
+    all_days = sorted(loc_by_day.keys())
+
+    # Años disponibles
+    years = sorted({m[:4] for m in all_months})
+
+    # Repo age
+    repo_age_days = days_span
 
     # Top 10 archivos hot
     hot_files = [
@@ -209,9 +240,19 @@ def extract_all(git: GitService, since: datetime | None, until: datetime | None,
     ]
 
     # Commits por autor por mes → formato plano para Chart.js (key=nombre display)
-    authors_series = {}
+    authors_series_month = {}
     for email, months in commits_by_author_month.items():
-        authors_series[resolve_name(email)] = [months.get(m, 0) for m in all_months]
+        authors_series_month[resolve_name(email)] = [months.get(m, 0) for m in all_months]
+
+    # Commits por autor por semana → formato plano para Chart.js
+    authors_series_week = {}
+    for email, weeks in commits_by_author_week.items():
+        authors_series_week[resolve_name(email)] = [weeks.get(w, 0) for w in all_weeks]
+
+    # Commits por autor por día → formato plano para Chart.js
+    authors_series_day = {}
+    for email, days in commits_by_author_day.items():
+        authors_series_day[resolve_name(email)] = [days.get(d, 0) for d in all_days]
 
     return {
         "meta": {
@@ -221,6 +262,8 @@ def extract_all(git: GitService, since: datetime | None, until: datetime | None,
             "since": since.isoformat() if since else None,
             "until": until.isoformat() if until else None,
             "total_commits_analyzed": total_commits,
+            "repo_age_days": repo_age_days,
+            "years": years,
         },
         "kpis": {
             "total_commits": total_commits,
@@ -239,11 +282,25 @@ def extract_all(git: GitService, since: datetime | None, until: datetime | None,
         },
         "timeline": {
             "months": all_months,
-            "commits_by_author": authors_series,
+            "weeks": all_weeks,
+            "days": all_days,
+            "commits_by_author": authors_series_month,
+            "commits_by_author_week": authors_series_week,
+            "commits_by_author_day": authors_series_day,
             "loc_by_month": {
                 "months": all_months,
                 "added": [loc_by_month[m]["added"] for m in all_months],
                 "deleted": [loc_by_month[m]["deleted"] for m in all_months],
+            },
+            "loc_by_week": {
+                "weeks": all_weeks,
+                "added": [loc_by_week[w]["added"] for w in all_weeks],
+                "deleted": [loc_by_week[w]["deleted"] for w in all_weeks],
+            },
+            "loc_by_day": {
+                "days": all_days,
+                "added": [loc_by_day[d]["added"] for d in all_days],
+                "deleted": [loc_by_day[d]["deleted"] for d in all_days],
             },
         },
         "hot_files": hot_files,

@@ -7,6 +7,7 @@ import "../../styles/global.css";
 const repos = loadRepos();
 const repo = repos.find((r) => r.name === Astro.params.repo) ?? null;
 const currentBranch = Astro.url.searchParams.get("branch") ?? "";
+const currentYear = Astro.url.searchParams.get("year") ?? "all";
 const stats = repo ? getStats(repo.name, currentBranch || undefined) : null;
 const branch = currentBranch || stats?.meta.branch || "";
 ---
@@ -19,7 +20,7 @@ const branch = currentBranch || stats?.meta.branch || "";
   </head>
   <body>
     {repo ? (
-      <Dashboard repo={repo} repos={repos} stats={stats} currentBranch={branch} />
+      <Dashboard repo={repo} repos={repos} stats={stats} currentBranch={branch} currentYear={currentYear} />
     ) : (
       <main class="max-w-[1400px] mx-auto py-10 px-6">
         <p class="text-gh-muted text-sm">No existe ese repositorio. <a href="/" class="text-gh-accent">Volver al dashboard</a></p>

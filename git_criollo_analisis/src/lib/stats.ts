@@ -10,6 +10,8 @@ export interface Stats {
     since: string | null;
     until: string | null;
     total_commits_analyzed: number;
+    repo_age_days: number;
+    years: number[];
   };
   kpis: {
     total_commits: number;
@@ -28,8 +30,14 @@ export interface Stats {
   };
   timeline: {
     months: string[];
+    weeks: string[];
+    days: string[];
     commits_by_author: Record<string, number[]>;
+    commits_by_author_week: Record<string, number[]>;
+    commits_by_author_day: Record<string, number[]>;
     loc_by_month: { months: string[]; added: number[]; deleted: number[] };
+    loc_by_week: { weeks: string[]; added: number[]; deleted: number[] };
+    loc_by_day: { days: string[]; added: number[]; deleted: number[] };
   };
   hot_files: { path: string; changes: number }[];
   heatmap: { date: string; count: number }[];
