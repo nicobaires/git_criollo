@@ -33,12 +33,13 @@ def parse_args():
     parser.add_argument("--output", "-o", default="./data/stats.json", help="Ruta de salida del JSON")
     parser.add_argument("--since", help="Fecha inicio (YYYY-MM-DD)")
     parser.add_argument("--until", help="Fecha fin (YYYY-MM-DD)")
+    parser.add_argument("--branch", "-b", default=None, help="Branch a analizar (default: activa)")
     parser.add_argument("--max-commits", type=int, default=5000, help="Máximo commits a analizar")
     parser.add_argument("--all", action="store_true", help="Genera stats para todos los repos de repos.json")
     return parser.parse_args()
 
 
-def extract_all(git: GitService, since: datetime | None, until: datetime | None, max_commits: int):
+def extract_all(git: GitService, since: datetime | None, until: datetime | None, max_commits: int, branch: str | None = None):
     """Extrae todas las métricas del repo en una sola pasada de git log --numstat."""
 
     repo = git.repo
@@ -52,6 +53,8 @@ def extract_all(git: GitService, since: datetime | None, until: datetime | None,
     if until:
         args.append(f"--until={until.strftime('%Y-%m-%d %H:%M:%S')}")
     args.append(f"--max-count={max_commits}")
+    if branch:
+        args.append(branch)
     output = repo.git.log(*args)
 
     # ── KPIs básicos ──
@@ -187,7 +190,7 @@ def extract_all(git: GitService, since: datetime | None, until: datetime | None,
     return {
         "meta": {
             "repo_name": os.path.basename(os.path.abspath(repo.working_tree_dir)),
-            "branch": git.get_branches().active,
+            "branch": branch or git.get_branches().active,
             "generated_at": datetime.now().isoformat(),
             "since": since.isoformat() if since else None,
             "until": until.isoformat() if until else None,
@@ -256,15 +259,21 @@ def _write_stats(data, output_path: Path):
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 
-def _analyze_one(repo_path, since, until, max_commits, output_path):
+def _sanitize_branch(branch: str) -> str:
+    return branch.replace("/", "-").replace(" ", "-")
+
+
+def _analyze_one(repo_path, since, until, max_commits, output_path, branch=None):
     print(f"🔍 Analizando repo: {os.path.abspath(repo_path)}")
+    if branch:
+        print(f"   Branch: {branch}")
     if since:
         print(f"   Desde: {args_since_str(since)}")
     if until:
         print(f"   Hasta: {args_since_str(until)}")
 
     git = GitService(repo_path)
-    data = extract_all(git, since, until, max_commits)
+    data = extract_all(git, since, until, max_commits, branch)
 
     _write_stats(data, output_path)
 
@@ -294,10 +303,30 @@ def main():
             sys.exit("❌ repos.json no tiene repos en la lista 'repos'.")
         stats_dir = Path(__file__).resolve().parent.parent / "src" / "data" / "stats"
         for repo in repos:
-            _analyze_one(repo["path"], since, until, args.max_commits, stats_dir / f"{repo['name']}.json")
+            branch = args.branch
+            branch_dir = stats_dir / repo["name"]
+            branch_dir.mkdir(parents=True, exist_ok=True)
+            if branch:
+                safe = _sanitize_branch(branch)
+                _analyze_one(repo["path"], since, until, args.max_commits, branch_dir / f"{safe}.json", branch)
+            else:
+                git = GitService(repo["path"])
+                active = git.get_branches().active
+                safe = _sanitize_branch(active)
+                _analyze_one(repo["path"], since, until, args.max_commits, branch_dir / f"{safe}.json", active)
         return
 
-    _analyze_one(args.repo_path, since, until, args.max_commits, Path(args.output))
+    repo_path = args.repo_path
+    branch = args.branch
+    if branch:
+        stats_dir = Path(__file__).resolve().parent.parent / "src" / "data" / "stats"
+        repo_name = os.path.basename(os.path.abspath(repo_path))
+        branch_dir = stats_dir / repo_name
+        branch_dir.mkdir(parents=True, exist_ok=True)
+        safe = _sanitize_branch(branch)
+        _analyze_one(repo_path, since, until, args.max_commits, branch_dir / f"{safe}.json", branch)
+    else:
+        _analyze_one(repo_path, since, until, args.max_commits, Path(args.output))
 
 
 if __name__ == "__main__":

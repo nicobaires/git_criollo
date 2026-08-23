@@ -4,6 +4,7 @@ import Chart from './Chart.svelte';
 import Heatmap from './Heatmap.svelte';
 import AddRepo from './AddRepo.svelte';
 import RemoveRepo from './RemoveRepo.svelte';
+import BranchSelector from './BranchSelector.svelte';
 import type { Repo } from '../lib/repos';
 import type { Stats } from '../lib/stats';
 
@@ -11,9 +12,11 @@ interface Props {
   repo: Repo | null;
   repos: Repo[];
   stats: Stats | null;
+  branches: string[];
+  currentBranch: string;
 }
 
-const { repo, repos, stats } = Astro.props;
+const { repo, repos, stats, branches, currentBranch } = Astro.props;
 
 const palette = ["#58a6ff", "#f0883e", "#3fb950", "#f85149", "#a371f7", "#d29922", "#f778ba", "#39c5cf"];
 
@@ -173,17 +176,19 @@ if (stats) {
         ))}
       </nav>
     )}
-    {repo && stats ? (
-      <p class="text-gh-muted text-sm m-0">
-        <span class="font-mono text-xs" title={repo.path}>{repo.path}</span>
-        <span> · {stats.meta.branch} · {stats.timeline.months[0]} a {stats.timeline.months.at(-1)}</span>
-      </p>
-    ) : repo ? (
-      <p class="text-gh-muted text-sm m-0">
-        <span class="font-mono text-xs" title={repo.path}>{repo.path}</span>
-        <span> · sin datos</span>
-      </p>
-    ) : null}
+    {repo && (
+      <div class="flex items-center gap-4 flex-wrap">
+        <p class="text-gh-muted text-sm m-0">
+          <span class="font-mono text-xs" title={repo.path}>{repo.path}</span>
+          {stats && (
+            <span> · {stats.timeline.months[0]} a {stats.timeline.months.at(-1)}</span>
+          )}
+        </p>
+        {branches.length > 0 && (
+          <BranchSelector repo={repo.name} branches={branches} current={currentBranch} client:load />
+        )}
+      </div>
+    )}
   </header>
 
   {!repo ? (
@@ -193,7 +198,7 @@ if (stats) {
     </p>
   ) : !stats ? (
     <p class="text-gh-muted text-sm">
-      No hay datos para <strong>{repo.name}</strong>. Se están generando o los podés
+      No hay datos para <strong>{repo.name}</strong> (branch: {currentBranch}). Se están generando o los podés
       generar manualmente con:
       <code class="bg-gh-card border border-gh-border rounded px-1.5 py-0.5 text-xs">python script/extract_stats.py --all</code>
     </p>

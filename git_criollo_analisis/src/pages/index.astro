@@ -1,12 +1,15 @@
 ---
 import Dashboard from "../components/Dashboard.astro";
 import { loadRepos } from "../lib/repos";
-import { getStats } from "../lib/stats";
+import { getStats, listBranches } from "../lib/stats";
 import "../styles/global.css";
 
 const repos = loadRepos();
 const repo = repos[0] ?? null;
-const stats = repo ? getStats(repo.name) : null;
+const currentBranch = Astro.url.searchParams.get("branch") ?? "";
+const branches = repo ? listBranches(repo.name) : [];
+const branch = currentBranch || (branches.length > 0 ? branches[0] : "");
+const stats = repo ? getStats(repo.name, branch || undefined) : null;
 ---
 
 <html lang="es">
@@ -16,6 +19,6 @@ const stats = repo ? getStats(repo.name) : null;
     <title>GitCriollo Analytics</title>
   </head>
   <body>
-    <Dashboard repo={repo} repos={repos} stats={stats} />
+    <Dashboard repo={repo} repos={repos} stats={stats} branches={branches} currentBranch={branch} />
   </body>
 </html>

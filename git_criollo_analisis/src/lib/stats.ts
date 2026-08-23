@@ -38,12 +38,32 @@ export interface Stats {
 
 const STATS_DIR = path.join(findProjectRoot(), "src", "data", "stats");
 
-export function getStats(repoName: string): Stats | null {
-  const file = path.join(STATS_DIR, `${repoName}.json`);
+export function getStats(repoName: string, branch?: string): Stats | null {
+  if (branch) {
+    const file = path.join(STATS_DIR, repoName, `${branch}.json`);
+    try {
+      return JSON.parse(fs.readFileSync(file, "utf-8")) as Stats;
+    } catch {
+      return null;
+    }
+  }
+  const dir = path.join(STATS_DIR, repoName);
   try {
-    return JSON.parse(fs.readFileSync(file, "utf-8")) as Stats;
+    const files = fs.readdirSync(dir).filter((f) => f.endsWith(".json"));
+    if (files.length === 0) return null;
+    const first = files.sort()[0];
+    return JSON.parse(fs.readFileSync(path.join(dir, first), "utf-8")) as Stats;
   } catch {
     return null;
+  }
+}
+
+export function listBranches(repoName: string): string[] {
+  const dir = path.join(STATS_DIR, repoName);
+  try {
+    return fs.readdirSync(dir).filter((f) => f.endsWith(".json")).map((f) => path.basename(f, ".json")).sort();
+  } catch {
+    return [];
   }
 }
 
@@ -56,10 +76,10 @@ export function loadStatsMap(): Record<string, Stats> {
     return map;
   }
   for (const entry of entries) {
-    if (!entry.endsWith(".json")) continue;
-    const name = path.basename(entry, ".json");
-    const stats = getStats(name);
-    if (stats) map[name] = stats;
+    const statPath = path.join(STATS_DIR, entry);
+    if (!fs.statSync(statPath).isDirectory()) continue;
+    const stats = getStats(entry);
+    if (stats) map[entry] = stats;
   }
   return map;
 }

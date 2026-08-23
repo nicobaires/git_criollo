@@ -68,10 +68,25 @@ function gitTopLevel(dir: string): string | null {
   }
 }
 
-function generateStats(repoPath: string, outputPath: string) {
+function gitBranches(dir: string): string[] {
+  try {
+    const out = execSync("git branch --format=%(refname:short)", {
+      cwd: dir,
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    return out.trim().split("\n").filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function generateStats(repoPath: string, outputPath: string, branch?: string) {
   const venvPython = path.join(PROJECT_ROOT, "..", ".venv", "bin", "python");
   const python = fs.existsSync(venvPython) ? venvPython : "python3";
-  const child = spawn(python, [EXTRACTOR_FILE, repoPath, "-o", outputPath], {
+  const args = [EXTRACTOR_FILE, repoPath, "-o", outputPath];
+  if (branch) args.push("--branch", branch);
+  const child = spawn(python, args, {
     cwd: PROJECT_ROOT,
     stdio: "ignore",
   });
@@ -128,8 +143,12 @@ export async function POST({ request }: { request: Request }) {
   repos.push({ name, path: realTop });
   writeConfig(repos);
 
-  const outputPath = path.join(STATS_DIR, `${name}.json`);
-  generateStats(realTop, outputPath);
+  const branchDir = path.join(STATS_DIR, name);
+  fs.mkdirSync(branchDir, { recursive: true });
+
+  const branches = gitBranches(realTop);
+  const branch = branches.length > 0 ? branches[0] : undefined;
+  generateStats(realTop, path.join(branchDir, `${branch ?? "HEAD"}.json`), branch);
 
   return new Response(
     JSON.stringify({ repo: { name, path: realTop }, generating: true }),
@@ -173,8 +192,8 @@ export async function DELETE({ request }: { request: Request }) {
 
   writeConfig(repos.filter((r) => r.name !== name));
 
-  const statsFile = path.join(STATS_DIR, `${name}.json`);
-  fs.rmSync(statsFile, { force: true });
+  const statsDir = path.join(STATS_DIR, name);
+  fs.rmSync(statsDir, { recursive: true, force: true });
 
   return new Response(JSON.stringify({ ok: true, repo: { name } }), {
     status: 200,
