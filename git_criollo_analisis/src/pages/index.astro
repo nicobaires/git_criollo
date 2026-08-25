@@ -8,6 +8,7 @@ const repos = loadRepos();
 const repo = repos[0] ?? null;
 const currentBranch = Astro.url.searchParams.get("branch") ?? "";
 const currentYear = Astro.url.searchParams.get("year") ?? "all";
+const currentTop = parseInt(Astro.url.searchParams.get("top") || "6");
 const stats = repo ? getStats(repo.name, currentBranch || undefined) : null;
 const branch = currentBranch || stats?.meta.branch || "";
 ---
@@ -19,6 +20,6 @@ const branch = currentBranch || stats?.meta.branch || "";
     <title>GitCriollo Analytics</title>
   </head>
   <body>
-    <Dashboard repo={repo} repos={repos} stats={stats} currentBranch={branch} currentYear={currentYear} />
+    <Dashboard repo={repo} repos={repos} stats={stats} currentBranch={branch} currentYear={currentYear} currentTop={currentTop} />
   </body>
 </html>

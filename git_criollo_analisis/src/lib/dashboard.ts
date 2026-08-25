@@ -75,15 +75,12 @@ export function computeYearKpis(stats: Stats, year: number | null, g: Granularit
 
   const t = getTimelineKeys(stats, g);
   let yCommits = 0, yAdded = 0, yDeleted = 0;
-  const yearAuthors = new Set<string>();
 
   const fKeys = filterByYear(t.keys, year);
 
   for (const [author, values] of Object.entries(t.commits)) {
     const filtered = filterValues(t.keys, fKeys, values);
-    const sum = filtered.reduce((s, v) => s + v, 0);
-    yCommits += sum;
-    if (sum > 0) yearAuthors.add(author);
+    yCommits += filtered.reduce((s, v) => s + v, 0);
   }
 
   for (let i = 0; i < t.keys.length; i++) {
@@ -95,7 +92,7 @@ export function computeYearKpis(stats: Stats, year: number | null, g: Granularit
 
   return {
     total_commits: yCommits,
-    total_authors: yearAuthors.size,
+    total_authors: stats.kpis.total_authors,
     total_added: yAdded,
     total_deleted: yDeleted,
     total_changes: yAdded + yDeleted,

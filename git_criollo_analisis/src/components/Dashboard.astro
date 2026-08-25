@@ -6,6 +6,7 @@ import AddRepo from './AddRepo.svelte';
 import RemoveRepo from './RemoveRepo.svelte';
 import BranchSelector from './BranchSelector.svelte';
 import YearSelector from './YearSelector.svelte';
+import TopNSelector from './TopNSelector.svelte';
 import type { Repo } from '../lib/repos';
 import type { Stats } from '../lib/stats';
 import { getGranularity, getTimelineData, getChartTitles, getTimeRangeLabel, computeYearKpis } from '../lib/dashboard';
@@ -16,13 +17,14 @@ interface Props {
   stats: Stats | null;
   currentBranch: string;
   currentYear: string;
+  currentTop: number;
 }
 
-const { repo, repos, stats, currentBranch, currentYear } = Astro.props;
+const { repo, repos, stats, currentBranch, currentYear, currentTop } = Astro.props;
 
 const palette = ["#58a6ff", "#f0883e", "#3fb950", "#f85149", "#a371f7", "#d29922", "#f778ba", "#39c5cf"];
 
-const TOP_N = 6;
+const TOP_N = currentTop;
 const OTROS_COLOR = "#7d8590";
 
 let kpis, life_metrics, timeline, heatmap, hot_files, distribution;
@@ -207,6 +209,9 @@ if (stats) {
         <BranchSelector repo={repo.name} current={currentBranch} client:load />
         {stats && stats.meta.years.length > 1 && (
           <YearSelector repo={repo.name} years={stats.meta.years} current={currentYear} currentBranch={currentBranch} client:load />
+        )}
+        {stats && distribution.length > 6 && (
+          <TopNSelector repo={repo.name} totalAuthors={distribution.length} current={currentTop} currentBranch={currentBranch} currentYear={currentYear} client:load />
         )}
       </div>
     )}
