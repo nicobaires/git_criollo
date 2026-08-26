@@ -67,6 +67,10 @@ export function sanitizeName(base: string): string {
   return clean || "repo";
 }
 
+export function sanitizeBranch(branch: string): string {
+  return branch.replace(/\//g, "-");
+}
+
 export function uniqueName(base: string, existing: Repo[]): string {
   const taken = new Set(existing.map((r) => r.name.toLowerCase()));
   let name = sanitizeName(base);

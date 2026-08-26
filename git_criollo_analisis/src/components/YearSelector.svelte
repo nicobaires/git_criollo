@@ -27,20 +27,27 @@
   </button>
 
   {#if open}
-    <div class="absolute top-full left-0 mt-1 bg-gh-card border border-gh-border rounded-xl shadow-lg z-50 py-1 min-w-[180px]">
+    <div class="absolute top-full left-0 mt-1 bg-gh-card border border-gh-border rounded-xl shadow-lg z-50 min-w-[180px]">
       {#each ["all", ...years].reverse() as y}
-        <button
-          type="button"
-          class:list={[
-            "w-full text-left px-3 py-1.5 text-[13px] cursor-pointer",
-            y === current
-              ? "text-gh-accent bg-[rgba(88,166,255,0.1)] cursor-default"
-              : "text-gh-text hover:bg-[rgba(139,148,158,0.1)]",
-          ]}
-          onclick={() => selectYear(String(y))}
-        >
-          {y === "all" ? "Todos los años" : y}
-        </button>
+        {#if y === current}
+          <button
+            type="button"
+            class="w-full text-left px-3 text-[13px] text-gh-accent bg-[rgba(88,166,255,0.1)] cursor-default"
+            style="padding: 6px 12px;"
+            onclick={() => selectYear(String(y))}
+          >
+            {y === "all" ? "Todos los años" : y}
+          </button>
+        {:else}
+          <button
+            type="button"
+            class="w-full text-left px-3 text-[13px] text-gh-text hover:bg-[rgba(139,148,158,0.1)] cursor-pointer"
+            style="padding: 6px 12px;"
+            onclick={() => selectYear(String(y))}
+          >
+            {y === "all" ? "Todos los años" : y}
+          </button>
+        {/if}
       {/each}
     </div>
   {/if}
