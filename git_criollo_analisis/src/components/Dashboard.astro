@@ -265,7 +265,7 @@ if (stats) {
       </div>
 
       <div class="grid grid-cols-2 gap-5 max-xl:grid-cols-1">
-        <section class="bg-gh-card border border-gh-border rounded-xl p-5 col-span-2 max-xl:col-span-1">
+        <section class="bg-gh-card border border-gh-border rounded-xl p-5">
           <h3 class="text-gh-hover text-[15px] font-semibold mt-0 mb-4">{chartTitle}{timeRangeLabel}</h3>
           <div class="h-80 relative">
             <Chart client:load type="line" data={commitsData} options={commitsOptions} />
