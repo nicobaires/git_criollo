@@ -2,6 +2,8 @@
 
 Dashboard de analítica para repositorios Git construido con [Astro](https://astro.build/) y [Svelte](https://svelte.dev/). Tema oscuro estilo GitHub.
 
+![Dashboard](analytics-c.png)
+
 ## Requisitos
 
 - [pnpm](https://pnpm.io/) para las dependencias frontend
