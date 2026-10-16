@@ -233,26 +233,45 @@ def extract_all(git: GitService, since: datetime | None, until: datetime | None,
         return names.most_common(1)[0][0] if names else email
 
     # Distribución para donut chart
-    total_for_pct = sum(author_commits.values())
+    name_commits = Counter()
+    for email, count in author_commits.items():
+        name_commits[resolve_name(email)] += count
+
+    total_for_pct = sum(name_commits.values())
     distribution = [
-        {"author": resolve_name(email), "commits": count, "percentage": round(count / total_for_pct * 100, 1)}
-        for email, count in author_commits.most_common()
+        {"author": name, "commits": count, "percentage": round(count / total_for_pct * 100, 1)}
+        for name, count in name_commits.most_common()
     ]
 
     # Commits por autor por mes → formato plano para Chart.js (key=nombre display)
-    authors_series_month = {}
+    authors_series_month: dict[str, list[int]] = {}
     for email, months in commits_by_author_month.items():
-        authors_series_month[resolve_name(email)] = [months.get(m, 0) for m in all_months]
+        name = resolve_name(email)
+        vals = [months.get(m, 0) for m in all_months]
+        if name in authors_series_month:
+            authors_series_month[name] = [a + b for a, b in zip(authors_series_month[name], vals)]
+        else:
+            authors_series_month[name] = vals
 
     # Commits por autor por semana → formato plano para Chart.js
-    authors_series_week = {}
+    authors_series_week: dict[str, list[int]] = {}
     for email, weeks in commits_by_author_week.items():
-        authors_series_week[resolve_name(email)] = [weeks.get(w, 0) for w in all_weeks]
+        name = resolve_name(email)
+        vals = [weeks.get(w, 0) for w in all_weeks]
+        if name in authors_series_week:
+            authors_series_week[name] = [a + b for a, b in zip(authors_series_week[name], vals)]
+        else:
+            authors_series_week[name] = vals
 
     # Commits por autor por día → formato plano para Chart.js
-    authors_series_day = {}
+    authors_series_day: dict[str, list[int]] = {}
     for email, days in commits_by_author_day.items():
-        authors_series_day[resolve_name(email)] = [days.get(d, 0) for d in all_days]
+        name = resolve_name(email)
+        vals = [days.get(d, 0) for d in all_days]
+        if name in authors_series_day:
+            authors_series_day[name] = [a + b for a, b in zip(authors_series_day[name], vals)]
+        else:
+            authors_series_day[name] = vals
 
     return {
         "meta": {
@@ -314,14 +333,19 @@ def _calculate_streak(active_days: set[str]) -> int:
     if not active_days:
         return 0
 
-    sorted_days = sorted(active_days, reverse=True)
     today = datetime.now().strftime("%Y-%m-%d")
     yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
 
-    # La racha solo cuenta si hoy o ayer hubo actividad
-    if today not in active_days and yesterday not in active_days:
+    # Filtrar días futuros si los hubiera (relojes desfasados)
+    valid_days = {d for d in active_days if d <= today}
+    if not valid_days:
         return 0
 
+    # La racha solo cuenta si hoy o ayer hubo actividad
+    if today not in valid_days and yesterday not in valid_days:
+        return 0
+
+    sorted_days = sorted(valid_days, reverse=True)
     streak = 1
     current = datetime.strptime(sorted_days[0], "%Y-%m-%d")
 

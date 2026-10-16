@@ -32,24 +32,29 @@ uv add gitpython textual
 uv run pytest tests/
 ```
 
-79 tests que cubren toda la capa de servicio (`git_service.py`), el extractor de analytics (`extract_stats.py`), formateo de diffs (`diff_utils.py`) y manejo de errores (`error_utils.py`). Usan repositorios temporales creados con `tmpdir`.
+83 tests que cubren toda la capa de servicio (`git_service.py`), el extractor de analytics (`extract_stats.py`), formateo de diffs (`diff_utils.py`), resolución de conflictos y manejo de errores (`error_utils.py`). Usan repositorios temporales creados con `tmpdir`.
 
 ### Correcciones incluidas
 
 - **HEAD detached**: muestra SHA corto en vez de asumir `"master"`
 - **Cross-platform**: `os.devnull` en vez de `/dev/null` (funciona en Windows)
-- **`checkout_remote`**: `rsplit` en vez de `split` para refs anidadas (`origin/feature/x`)
+- **`checkout_remote`**: `split` para remover el prefijo del remote y preservar ramas anidadas (`origin/feature/x` -> `feature/x`)
 - **pull/push/fetch**: sin fallback silencioso a `origin`, error descriptivo si no hay remote configurado
 - **`run_command`**: `shlex.split` + validación anti-inyección + lista de args a `execute()`
 - **`stage_hunk`**: localización robusta de hunks via `raw_diff.find(hunk.raw)`, cleanup en `finally`
+- **Descarte de cambios**: `discard_changes` soporta tanto archivos como carpetas untracked completas
 - **Logging**: reemplazados todos los `except Exception: pass` con `logging.warning/exception`
 - **Excepciones específicas**: `GitCommandError`, `BadName`, `InvalidGitRepositoryError` en vez de `Exception` genérico
-- **Markup Textual**: `textual.markup.escape` para diffs (backslashes, corchetes, llaves correctamente escapados)
+- **Markup Textual**: `textual.markup.escape` para diffs, resolución de conflictos, detalle de commit y modales de confirmación (previene `MarkupError` si hay corchetes o tags en el código)
+- **Modales de ramas y tags**: eliminación de falsas confirmaciones previas y manejo seguro de excepciones en callbacks
+- **Stash Push**: Enter guarda stash sin mensaje y Escape cancela de forma segura sin crear stashes no deseados
+- **Validación de commits**: comprobación de cambios en `staged` antes de abrir el diálogo de confirmación
 - **`KeyboardInterrupt`/`SystemExit`**: no se tragan más (Ctrl+C realmente sale)
 - **Thread-safety**: `call_from_thread` para notificaciones en pull/push/fetch (evita crashes)
-- **Resolución de conflictos**: re-parseo de regiones tras cada resolución (evita offsets stale)
+- **Resolución de conflictos**: re-parseo de regiones tras cada resolución (evita offsets stale) y tests exhaustivos
 - **Push en detached HEAD**: aviso antes de intentar push sin rama activa
 - **NameError en handlers**: corregido `is_merge_in_progress` y `get_conflict_regions`
+- **Analytics**: consolidación de autores con múltiples correos bajo un mismo nombre display
 
 ## Uso
 

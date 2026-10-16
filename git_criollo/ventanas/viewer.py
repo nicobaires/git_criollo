@@ -73,7 +73,7 @@ class VentanaDetalleCommit(BaseModalScreen):
                           + (f"  [dim]({', '.join(detail.branches)})[/]" if detail.branches else "")),
                     Vertical(
                         Label(f"[bold #87d7ff]{escape(detail.committer)}[/]"),
-                        Label(f"[bold #87d7ff]{escape(detail.committer_date)}"),
+                        Label(f"[bold #87d7ff]{escape(detail.committer_date)}[/]"),
                         id="meta_section",
                     ),
                     Label(f"[bold]Archivos ({len(detail.files)})[/]", id="files_header"),

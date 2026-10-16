@@ -88,8 +88,9 @@ export function spawnExtractor(repoPath: string, outputPath: string, args: strin
   const python = fs.existsSync(venvPython) ? venvPython : "python3";
   const child = spawn(python, [EXTRACTOR_FILE, repoPath, "-o", outputPath, ...args], {
     cwd: PROJECT_ROOT,
-    stdio: "ignore",
+    stdio: ["ignore", "ignore", "pipe"],
   });
+  child.stderr?.on("data", (data) => console.error("[extractor stderr]", data.toString()));
   child.on("error", (err) => console.error("[extractor]", err.message));
   return child;
 }

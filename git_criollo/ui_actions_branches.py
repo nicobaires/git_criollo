@@ -9,12 +9,15 @@ from git_criollo.ventanas import (
 
 
 class MixinBranchActions:
-    @git_action("Rama creada.")
     def action_nueva_rama(self) -> None:
         def p(n: str | None):
             if n:
-                self.git.create_branch(n)
-                self.actualizar_ramas()
+                try:
+                    self.git.create_branch(n)
+                    self.notify("Rama creada.", severity="information")
+                    self.actualizar_ramas()
+                except Exception as e:
+                    self._notify_error(e)
         self.push_screen(VentanaNuevaRama(), p)
 
     def action_cambiar_rama(self) -> None:
@@ -97,12 +100,15 @@ class MixinBranchActions:
             self.notify(f"Tag '{tag_name}' borrado.")
             self.actualizar_ramas()
 
-    @git_action("Tag creado.")
     def action_crear_tag(self) -> None:
         def p(nombre: str | None):
             if nombre:
-                self.git.create_tag(nombre)
-                self.actualizar_ramas()
+                try:
+                    self.git.create_tag(nombre)
+                    self.notify("Tag creado.", severity="information")
+                    self.actualizar_ramas()
+                except Exception as e:
+                    self._notify_error(e)
         self.push_screen(VentanaTag(), p)
 
     def action_eliminar_tag(self) -> None:

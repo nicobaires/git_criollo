@@ -148,8 +148,11 @@ class VentanaUncommitted(ModalScreen):
 
     def action_commit_cambios(self) -> None:
         info = self.git.get_status()
-        if not info.staged and not info.untracked and not info.is_empty_repo:
-            self.notify("No hay cambios para confirmar.", severity="warning")
+        if not info.staged:
+            if info.unstaged or info.untracked:
+                self.notify("No hay cambios en el stage. Presioná [a] o Enter para stagear primero.", severity="warning")
+            else:
+                self.notify("No hay cambios para confirmar.", severity="warning")
             return
 
         def guardar(mensaje: str | None) -> None:

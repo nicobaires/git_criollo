@@ -4,6 +4,7 @@ from textual.app import ComposeResult
 from textual.widgets import Button, Label
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
+from textual.markup import escape
 
 
 class VentanaConfirmar(ModalScreen[bool]):
@@ -114,7 +115,7 @@ class VentanaConfirmar(ModalScreen[bool]):
 def confirmar_borrado_rama(nombre: str) -> VentanaConfirmar:
     return VentanaConfirmar(
         titulo="🗑  ¿Borrar rama?",
-        mensaje=f"¿Seguro que querés eliminar [bold]{nombre}[/]?",
+        mensaje=f"¿Seguro que querés eliminar [bold]{escape(nombre)}[/]?",
         warning="[bold]Esta acción no se puede deshacer.[/]",
         color="#ff5f5f",
         texto_si="Sí, borrar",
@@ -125,7 +126,7 @@ def confirmar_borrado_rama(nombre: str) -> VentanaConfirmar:
 def confirmar_merge(nombre: str) -> VentanaConfirmar:
     return VentanaConfirmar(
         titulo="🔀  ¿Mergear?",
-        mensaje=f"¿Mergear [bold]{nombre}[/] en la rama actual?",
+        mensaje=f"¿Mergear [bold]{escape(nombre)}[/] en la rama actual?",
         color="#00afd7",
         texto_si="Sí, mergear",
         variante_si="primary",
@@ -135,7 +136,7 @@ def confirmar_merge(nombre: str) -> VentanaConfirmar:
 def confirmar_borrado_tag(nombre: str) -> VentanaConfirmar:
     return VentanaConfirmar(
         titulo="🏷  ¿Borrar tag?",
-        mensaje=f"¿Seguro que querés eliminar el tag [bold]{nombre}[/]?",
+        mensaje=f"¿Seguro que querés eliminar el tag [bold]{escape(nombre)}[/]?",
         warning="[bold]Esta acción no se puede deshacer.[/]",
         color="#ff5f5f",
         texto_si="Sí, borrar",
@@ -146,7 +147,7 @@ def confirmar_borrado_tag(nombre: str) -> VentanaConfirmar:
 def confirmar_descarte(ruta: str) -> VentanaConfirmar:
     return VentanaConfirmar(
         titulo="🗑  ¿Descartar cambios?",
-        mensaje=f"¿Seguro que querés descartar los cambios de [bold]{ruta}[/]?",
+        mensaje=f"¿Seguro que querés descartar los cambios de [bold]{escape(ruta)}[/]?",
         warning="[bold]Esta acción no se puede deshacer.[/]",
         color="#ff5f5f",
         texto_si="Sí, descartar",
@@ -157,7 +158,7 @@ def confirmar_descarte(ruta: str) -> VentanaConfirmar:
 def confirmar_push(branch: str) -> VentanaConfirmar:
     return VentanaConfirmar(
         titulo="⬆  ¿Push a remoto?",
-        mensaje=f"¿Subir commits de [bold]{branch}[/] al remoto?",
+        mensaje=f"¿Subir commits de [bold]{escape(branch)}[/] al remoto?",
         color="#00afd7",
         texto_si="Sí, push",
         variante_si="primary",
@@ -189,7 +190,7 @@ def confirmar_amend() -> VentanaConfirmar:
 def confirmar_cherrypick(sha: str) -> VentanaConfirmar:
     return VentanaConfirmar(
         titulo="🍒  ¿Cherry-pick?",
-        mensaje=f"¿Aplicar el commit [bold]{sha}[/] en la rama actual?",
+        mensaje=f"¿Aplicar el commit [bold]{escape(sha)}[/] en la rama actual?",
         color="#af5fff",
         texto_si="Sí, cherry-pick",
         variante_si="primary",

@@ -47,13 +47,13 @@ class TestBranches:
         gs.checkout("nueva")
         assert gs.repo.active_branch.name == "nueva"
 
-    def test_checkout_remote_rsplit(self, gs):
+    def test_checkout_remote(self, gs):
         subprocess.run(
-            ["git", "update-ref", "refs/remotes/origin/feature/x", "HEAD"],
+            ["git", "update-ref", "refs/remotes/origin/feature/nested", "HEAD"],
             capture_output=True,
         )
-        gs.checkout_remote("origin/feature/x")
-        assert gs.repo.active_branch.name == "x"
+        gs.checkout_remote("origin/feature/nested")
+        assert gs.repo.active_branch.name == "feature/nested"
 
     def test_merge(self, gs):
         gs.create_branch("merge-target")

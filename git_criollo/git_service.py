@@ -3,6 +3,7 @@ import re
 import tempfile
 import logging
 import shlex
+import shutil
 from git import Repo, GitCommandError, BadName, InvalidGitRepositoryError
 
 from git_criollo.models import (
@@ -177,7 +178,7 @@ class GitService:
         self.repo.git.checkout(name)
 
     def checkout_remote(self, remote_ref: str) -> None:
-        local_name = remote_ref.rsplit("/", 1)[1]
+        local_name = remote_ref.split("/", 1)[1] if "/" in remote_ref else remote_ref
         self.repo.git.checkout("-b", local_name, remote_ref)
 
     def delete_branch(self, name: str, force: bool = True) -> None:
@@ -513,5 +514,7 @@ class GitService:
             full_path = os.path.join(self.repo.working_tree_dir, path)
             if os.path.isfile(full_path):
                 os.remove(full_path)
+            elif os.path.isdir(full_path):
+                shutil.rmtree(full_path)
         else:
             self.repo.git.checkout("--", path)

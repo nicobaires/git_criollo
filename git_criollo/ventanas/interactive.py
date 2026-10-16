@@ -2,6 +2,7 @@ from textual.app import ComposeResult
 from textual.widgets import ListView, ListItem, Label, Static
 from textual.containers import Vertical, ScrollableContainer
 from textual.screen import ModalScreen
+from textual.markup import escape
 from git import GitCommandError
 
 from git_criollo.diff_utils import _diff_coloreado
@@ -248,14 +249,14 @@ class VentanaConflictos(ModalScreen[bool]):
         region = self._regiones[self._idx_region]
         header = self.query_one("#conflict_header", Label)
         header.update(
-            f"[bold #ff5f5f]{path}[/] \u2014 Conflicto {self._resueltas + 1} \u2014 {len(self._regiones)} restantes  "
+            f"[bold #ff5f5f]{escape(path)}[/] \u2014 Conflicto {self._resueltas + 1} \u2014 {len(self._regiones)} restantes  "
             f"(archivo {self._idx_archivo + 1} de {len(self.archivos)})"
         )
         content = (
             f"[#ff5f5f]<<<<<<< OURS[/]\n"
-            f"{region.ours}\n"
+            f"{escape(region.ours)}\n"
             f"[#888888]=======[/]\n"
-            f"[#00ff00]{region.theirs}[/]\n"
+            f"[#00ff00]{escape(region.theirs)}[/]\n"
             f"[#00afff]>>>>>>> THEIRS[/]"
         )
         body = self.query_one("#conflict_body", ScrollableContainer)

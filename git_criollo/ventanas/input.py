@@ -23,6 +23,7 @@ class VentanaInput(ModalScreen[str]):
         placeholder: str = "",
         color: str = "#888",
         width: int = 56,
+        allow_empty: bool = False,
     ):
         super().__init__()
         self._titulo = titulo
@@ -30,6 +31,7 @@ class VentanaInput(ModalScreen[str]):
         self._placeholder = placeholder
         self._color = color
         self._width = width
+        self._allow_empty = allow_empty
 
     def compose(self) -> ComposeResult:
         with Vertical(id="input_box"):
@@ -42,11 +44,12 @@ class VentanaInput(ModalScreen[str]):
         self.query_one("#input_box").styles.width = self._width
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
-        if event.value.strip():
-            self.dismiss(event.value.strip())
+        val = event.value.strip()
+        if val or self._allow_empty:
+            self.dismiss(val)
 
     def action_quit(self) -> None:
-        self.dismiss("")
+        self.dismiss(None)
 
 
 def VentanaNuevaRama() -> VentanaInput:
@@ -76,6 +79,7 @@ def VentanaStashPush() -> VentanaInput:
         placeholder="mensaje opcional",
         color="#af5fff",
         width=60,
+        allow_empty=True,
     )
 
 

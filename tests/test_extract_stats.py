@@ -89,3 +89,18 @@ class TestExtractAll:
         assert data["heatmap"] == []
         assert data["distribution"] == []
         assert data["life_metrics"]["current_streak_days"] == 0
+
+    def test_author_aggregation_by_name(self, repo_with_commits):
+        import subprocess
+        with open("extra.txt", "w") as f:
+            f.write("extra")
+        subprocess.run(["git", "add", "extra.txt"], capture_output=True)
+        subprocess.run(["git", "-c", "user.email=other@test.com", "-c", "user.name=Test", "commit", "-m", "extra"], capture_output=True)
+
+        git = GitService(repo_with_commits)
+        data = extract_stats.extract_all(git, None, None, 100)
+
+        assert len(data["distribution"]) == 1
+        assert data["distribution"][0]["author"] == "Test"
+        assert data["distribution"][0]["commits"] == 6
+        assert data["distribution"][0]["percentage"] == 100.0

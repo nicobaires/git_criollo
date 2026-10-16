@@ -19,8 +19,11 @@ class MixinChangeActions:
 
     def action_commit_cambios(self) -> None:
         info = self.git.get_status()
-        if not info.staged and not info.untracked and not info.is_empty_repo:
-            self.notify("No hay cambios para confirmar en un commit.", severity="warning")
+        if not info.staged:
+            if info.unstaged or info.untracked:
+                self.notify("No hay cambios en el stage. Agregá archivos con [a] primero.", severity="warning")
+            else:
+                self.notify("No hay cambios para confirmar en un commit.", severity="warning")
             return
 
         def guardar_commit(mensaje: str | None) -> None:
